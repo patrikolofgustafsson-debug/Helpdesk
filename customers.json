@@ -1,0 +1,121 @@
+﻿[
+    {
+        "id": "c1",
+        "name": "Anders Andersson",
+        "email": "anders@mail.se",
+        "title": "IT-Chef",
+        "company": "Eventful AB"
+    },
+    {
+        "id": "c2",
+        "name": "Erik Eriksson",
+        "email": "erik@mail.se",
+        "title": "Projektledare",
+        "company": "Testbolaget"
+    },
+    {
+        "id": "c3",
+        "name": "Johan Lind",
+        "email": "johan.lind@test.se",
+        "title": "Utvecklare",
+        "company": "Testbolaget"
+    },
+    {
+        "id": "c4",
+        "name": "Karin Holmgren",
+        "email": "karin.h@skolpoolen.se",
+        "title": "Rektor",
+        "company": "Skolpoolen"
+    },
+    {
+        "id": "c5",
+        "name": "Sven Svensson",
+        "email": "sven.s@kommunen.se",
+        "title": "Handläggare",
+        "company": "Kommunen"
+    },
+    {
+        "id": "c6",
+        "name": "Maria Nilsson",
+        "email": "maria.n@eventful.se",
+        "title": "Ekonomiansvarig",
+        "company": "Eventful AB"
+    },
+    {
+        "id": "c7",
+        "name": "Lisa Larsson",
+        "email": "lisa.l@skolpoolen.se",
+        "title": "Lärare",
+        "company": "Skolpoolen"
+    },
+    {
+        "id": "c8",
+        "name": "Olof Olsson",
+        "email": "olof.o@kommunen.se",
+        "title": "IT-Strateg",
+        "company": "Kommunen"
+    },
+    {
+        "id": "c9",
+        "name": "Sara Sjögren",
+        "email": "sara.s@eventful.se",
+        "title": "Konsult",
+        "company": "Eventful AB"
+    },
+    {
+        "id": "c10",
+        "name": "Gustav Glad",
+        "email": "gustav.glad@test.se",
+        "title": "Säljare",
+        "company": "Testbolaget"
+    },
+    {
+        "id": "c11",
+        "name": "Emma Ek",
+        "email": "emma.ek@skolpoolen.se",
+        "title": "SYV",
+        "company": "Skolpoolen"
+    },
+    {
+        "id": "c12",
+        "name": "Nils Nord",
+        "email": "nils.nord@kommunen.se",
+        "title": "Koordinator",
+        "company": "Kommunen"
+    },
+    {
+        "id": "c13",
+        "name": "Britta Blå",
+        "email": "britta.b@eventful.se",
+        "title": "VD",
+        "company": "Eventful AB"
+    },
+    {
+        "id": "c14",
+        "name": "Fredrik Fast",
+        "email": "fredrik.f@test.se",
+        "title": "Logistikchef",
+        "company": "Testbolaget"
+    },
+    {
+        "id": "c15",
+        "name": "Maja Myra",
+        "email": "maja.m@skolpoolen.se",
+        "title": "Skolsköterska",
+        "company": "Skolpoolen"
+    },
+    {
+        "id": "c16",
+        "name": "Ulla Under",
+        "email": "ulla.u@eventful.se",
+        "title": "Administratör",
+        "company": "Eventful AB"
+    },
+    {
+        "id": "c17",
+        "name": "Viktor Våg",
+        "email": "viktor.v@test.se",
+        "title": "Tekniker",
+        "company": "Testbolaget"
+    }
+]

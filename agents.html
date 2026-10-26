@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenter - Eventful Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="shared.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        html, body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        #main-content { margin-left: 16rem; padding: 3rem; min-height: 100vh; }
+        @media (max-width: 1024px) { #main-content { margin-left: 0; padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+    <div id="main-content">
+        <header class="flex justify-between items-center mb-12">
+            <h1 class="text-7xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">Agenter</h1>
+            <button onclick="openAgentModal()" class="bg-[#2563EB] text-white px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
+                Skapa Agent
+            </button>
+        </header>
+
+        <div class="bg-white rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 border-b border-slate-100">
+                    <tr>
+                        <th class="p-10 text-[11px] font-black uppercase text-slate-400 tracking-widest">Namn</th>
+                        <th class="p-10 text-[11px] font-black uppercase text-slate-400 tracking-widest">E-post</th>
+                        <th class="p-10 text-[11px] font-black uppercase text-slate-400 tracking-widest text-right">Åtgärder</th>
+                    </tr>
+                </thead>
+                <tbody id="agentList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="agentModal" style="display:none;" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm items-center justify-center p-4 z-[9999]">
+        <div class="bg-white w-full max-w-xl rounded-[4rem] p-16 shadow-2xl relative">
+            <h3 id="modalTitle" class="text-4xl font-black mb-10 uppercase italic tracking-tighter text-slate-800">Skapa Agent</h3>
+            <input type="hidden" id="edit-id">
+            <div class="space-y-6">
+                <input id="in-name" type="text" placeholder="Namn" class="w-full p-6 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                <input id="in-email" type="email" placeholder="E-post" class="w-full p-6 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                
+                <div class="flex gap-6 pt-6">
+                    <button onclick="closeAgentModal()" class="flex-1 py-4 text-slate-400 font-black uppercase text-[11px]">Avbryt</button>
+                    <button onclick="saveAgent()" class="flex-1 bg-blue-600 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl">Spara</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allAgents = [];
+
+        async function init() {
+            const res = await fetch('/api/agents?t=' + Date.now());
+            allAgents = await res.json();
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('agentList');
+            // FIX: Använder en säkrare metod att skicka ID till funktionerna genom att använda ' och " korrekt
+            list.innerHTML = allAgents.map(a => `
+                <tr class="border-b border-slate-50">
+                    <td class="p-10 text-[15px] font-black italic text-slate-800">${a.name}</td>
+                    <td class="p-10 text-[15px] font-black italic text-slate-400">${a.email}</td>
+                    <td class="p-10 text-right space-x-4">
+                        <button onclick="editAgent('${a.id}')" class="text-blue-600 font-black uppercase text-[11px] tracking-widest hover:underline">Redigera</button>
+                        <button onclick="deleteAgent('${a.id}')" class="text-red-500 font-black uppercase text-[11px] tracking-widest hover:underline">Radera</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAgentModal() {
+            document.getElementById('edit-id').value = "";
+            document.getElementById('in-name').value = "";
+            document.getElementById('in-email').value = "";
+            document.getElementById('modalTitle').innerText = "Skapa Agent";
+            document.getElementById('agentModal').style.display = 'flex';
+        }
+
+        function closeAgentModal() {
+            document.getElementById('agentModal').style.display = 'none';
+        }
+
+        function editAgent(id) {
+            const agent = allAgents.find(a => String(a.id) === String(id));
+            if (agent) {
+                document.getElementById('edit-id').value = agent.id;
+                document.getElementById('in-name').value = agent.name;
+                document.getElementById('in-email').value = agent.email;
+                document.getElementById('modalTitle').innerText = "Redigera Agent";
+                document.getElementById('agentModal').style.display = 'flex';
+            }
+        }
+
+        async function saveAgent() {
+            const data = {
+                id: document.getElementById('edit-id').value || null,
+                name: document.getElementById('in-name').value,
+                email: document.getElementById('in-email').value
+            };
+            const res = await fetch('/api/agents/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                closeAgentModal();
+                setTimeout(init, 300);
+            }
+        }
+
+        async function deleteAgent(id) {
+            if (!confirm("Är du säker på att du vill radera denna agent?")) return;
+            
+            // Vi skickar en POST till en ny endpunkt /delete
+            const res = await fetch('/api/agents/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+
+            if (res.ok) {
+                setTimeout(init, 300);
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ärende - Eventful Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="shared.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        html, body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        #main-content { margin-left: 16rem; padding: 3rem; min-height: 100vh; }
+        .notes-scroll::-webkit-scrollbar { height: 4px; width: 4px; }
+        .notes-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .save-indicator { transition: all 0.3s ease; opacity: 0; pointer-events: none; }
+        .save-indicator.show { opacity: 1; }
+        .img-preview { max-height: 250px; border-radius: 1rem; cursor: zoom-in; margin-top: 10px; display: block; border: 1px solid #e2e8f0; }
+        .file-attachment {
+            display: flex; align-items: center; gap: 0.75rem; background: #f1f5f9; padding: 0.75rem 1rem;
+            border-radius: 0.75rem; text-decoration: none; transition: all 0.2s; border: 1px solid #e2e8f0;
+        }
+
+        /* Anpassad modern dropdown-pil */
+        .filter-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1.25rem center;
+            background-size: 0.75rem;
+        }
+
+        @media (max-width: 1024px) { #main-content { margin-left: 0; padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+    <div id="main-content">
+        <div class="mb-12 bg-[#1E293B] rounded-[2.5rem] p-8 shadow-xl border border-slate-700">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Intern logg (Endast agenter)</h3>
+                </div>
+                <span id="note-save-status" class="save-indicator text-[9px] font-black text-green-400 uppercase italic">Sparat!</span>
+            </div>
+            
+            <div class="flex gap-3 mb-2">
+                <input id="internal-note-input" type="text" placeholder="Skriv en intern anteckning..." class="flex-1 bg-slate-900/50 border-none rounded-2xl p-5 text-slate-300 text-xs italic outline-none focus:ring-1 focus:ring-blue-500">
+                <label class="bg-slate-700 text-slate-300 px-6 flex items-center rounded-2xl cursor-pointer hover:bg-slate-600 transition shadow-lg">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" id="internal-file" class="hidden" onchange="handleFile('internal')">
+                </label>
+                <button onclick="addInternalNote()" class="bg-[#2563EB] text-white px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition">Spara Not</button>
+            </div>
+            <div id="internal-preview-box" class="hidden px-4 mb-4">
+                <div class="inline-flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg border border-slate-600">
+                    <span id="internal-preview-name" class="text-[9px] font-black text-blue-400 uppercase tracking-tighter"></span>
+                    <button onclick="clearFile('internal')" class="text-red-400 hover:text-red-300 font-bold ml-2">×</button>
+                </div>
+            </div>
+            <div id="internal-notes-list" class="space-y-3 max-h-40 overflow-y-auto pr-2 notes-scroll"></div>
+        </div>
+
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h2 id="display-id" class="text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] italic mb-1">#----</h2>
+                <h1 id="display-title" class="text-6xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">Laddar...</h1>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="window.location.href='tickets.html'" class="bg-white text-slate-400 px-8 py-5 rounded-2xl text-[10px] font-black uppercase border border-slate-100 shadow-sm hover:bg-slate-50 transition">Lista</button>
+                <button id="resolve-btn" onclick="markAsResolved()" class="bg-[#10B981] text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase shadow-lg hover:scale-105 transition">Lös ärende</button>
+            </div>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-10">
+            <div class="flex-1 space-y-8">
+                <div class="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p id="display-cust" class="font-black text-sm uppercase italic text-slate-800"></p>
+                            <p id="display-date" class="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1"></p>
+                        </div>
+                        <div id="status-pill" class="px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">Open</div>
+                    </div>
+                    <div id="display-desc" class="text-slate-600 leading-relaxed italic text-sm whitespace-pre-wrap mb-4 font-medium"></div>
+                    <div id="display-desc-attachment"></div>
+                </div>
+
+                <div class="bg-white rounded-[3rem] p-8 shadow-xl border border-slate-100">
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-6 ml-4 italic">Svara kund som: <span id="current-agent-name" class="text-blue-500">-</span></h4>
+                    <textarea id="reply-text" placeholder="Skriv ditt svar..." class="w-full p-8 bg-slate-50 rounded-[2.5rem] border-none outline-none font-medium text-slate-600 h-48 leading-relaxed mb-6 italic text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+                    
+                    <div class="flex justify-between items-center px-4">
+                        <div class="flex items-center gap-4">
+                            <label class="cursor-pointer bg-slate-100 px-6 py-3 rounded-xl text-[9px] font-black uppercase text-slate-500 hover:bg-slate-200 transition">
+                                <i class="fas fa-paperclip mr-2"></i>Bifoga fil
+                                <input type="file" id="reply-file" class="hidden" onchange="handleFile('reply')">
+                            </label>
+                            <div id="reply-preview-box" class="hidden items-center gap-3">
+                                <span id="reply-preview-name" class="text-[9px] font-black uppercase text-blue-500 italic tracking-tighter"></span>
+                                <button onclick="clearFile('reply')" class="text-red-500 font-bold">×</button>
+                            </div>
+                        </div>
+                        <button onclick="sendReply()" class="bg-[#2563EB] text-white px-14 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-blue-700 transition">Skicka Svar</button>
+                    </div>
+                </div>
+
+                <div id="history-list" class="space-y-6"></div>
+            </div>
+
+            <div class="lg:w-80">
+                <div class="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 sticky top-10 space-y-6">
+                    <h3 class="text-[11px] font-black uppercase text-slate-400 tracking-widest italic text-center mb-4">Ärendeinställningar</h3>
+                    
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Kund</label>
+                        <select id="mgmt-cust" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-slate-700 outline-none hover:bg-slate-100 transition cursor-pointer"></select>
+                    </div>
+
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Ansvarig Agent</label>
+                        <select id="mgmt-agent" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-slate-700 outline-none hover:bg-slate-100 transition cursor-pointer"></select>
+                    </div>
+
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Status</label>
+                        <select id="status-val" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-blue-600 outline-none hover:bg-slate-100 transition cursor-pointer">
+                            <option value="Open">Öppen</option>
+                            <option value="Pending">Väntar</option>
+                            <option value="Resolved">Löst</option>
+                        </select>
+                    </div>
+
+                    <hr class="border-slate-100 my-4">
+
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Tjänst</label>
+                        <select id="service-val" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-slate-600 outline-none hover:bg-slate-100 transition cursor-pointer">
+                            <option value="Microsoft">Microsoft</option>
+                            <option value="Google">Google</option>
+                            <option value="DNP">DNP</option>
+                            <option value="Hårdvara">Hårdvara</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Typ</label>
+                        <select id="category-val" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-slate-600 outline-none hover:bg-slate-100 transition cursor-pointer">
+                            <option value="Felanmälan">Felanmälan</option>
+                            <option value="Justering">Justering</option>
+                            <option value="Beställning">Beställning</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Grupp</label>
+                        <select id="group-val" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-slate-600 outline-none hover:bg-slate-100 transition cursor-pointer">
+                            <option value="1st Line">1st Line</option>
+                            <option value="2nd Line">2nd Line</option>
+                            <option value="Drift">Drift</option>
+                            <option value="Hårdvaruteam">Hårdvaruteam</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-wider">Felkälla</label>
+                        <select id="source-val" onchange="updateTicket()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black text-[11px] uppercase text-slate-600 outline-none hover:bg-slate-100 transition cursor-pointer">
+                            <option value="E-post">E-post</option>
+                            <option value="Telefon">Telefon</option>
+                            <option value="Portal">Portal</option>
+                        </select>
+                    </div>
+                    
+                    <div class="pt-4 text-center">
+                        <span id="save-status" class="save-indicator text-[10px] font-black uppercase text-green-500 italic">Sparat!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ticket = null;
+        let currentUser = JSON.parse(localStorage.getItem('loggedUser')) || { name: "Agent" };
+        const tid = new URLSearchParams(window.location.search).get('id');
+        let tempFiles = { internal: { data: null, name: "" }, reply: { data: null, name: "" } };
+
+        async function init() {
+            document.getElementById('current-agent-name').innerText = currentUser.name;
+            if (!tid) return window.location.href = 'tickets.html';
+
+            const [tRes, cRes, aRes] = await Promise.all([
+                fetch('/api/tickets?t=' + Date.now()),
+                fetch('/api/customers'),
+                fetch('/api/agents')
+            ]);
+            
+            const tickets = await tRes.json();
+            const customers = await cRes.json();
+            const agents = await aRes.json();
+            
+            ticket = tickets.find(t => t.id == tid);
+            if (!ticket) return;
+
+            // Fyll i dropdowns
+            document.getElementById('mgmt-cust').innerHTML = customers.map(c => `<option value="${c.name}" ${c.name === ticket.customer ? 'selected' : ''}>${c.name}</option>`).join('');
+            document.getElementById('mgmt-agent').innerHTML = `<option value="">Otilldelat</option>` + agents.map(a => `<option value="${a.name}" ${a.name === ticket.agent ? 'selected' : ''}>${a.name}</option>`).join('');
+
+            renderTicket();
+        }
+
+        function renderAttachment(fileData, fileName) {
+            if (!fileData) return '';
+            if (fileData.startsWith('data:image/')) {
+                return `<img src="${fileData}" class="img-preview" onclick="window.open(this.src)">`;
+            }
+            return `
+                <a href="${fileData}" download="${fileName || 'bilaga'}" class="file-attachment mt-3">
+                    <i class="fas fa-file-alt text-slate-400"></i>
+                    <span class="text-[10px] font-bold text-slate-700 truncate">${fileName || 'Ladda ner'}</span>
+                </a>
+            `;
+        }
+
+        function renderTicket() {
+            document.getElementById('display-id').innerText = "#" + ticket.id;
+            document.getElementById('display-title').innerText = ticket.title;
+            document.getElementById('display-desc').innerText = ticket.desc;
+            document.getElementById('display-cust').innerText = ticket.customer;
+            document.getElementById('display-date').innerText = ticket.created;
+            
+            document.getElementById('display-desc-attachment').innerHTML = renderAttachment(ticket.image || ticket.file, ticket.fileName);
+
+            // Sätt dropdown-värden (med fallbacks om fältet saknas på gamla ärenden)
+            document.getElementById('status-val').value = ticket.status || "Open";
+            document.getElementById('service-val').value = ticket.service || "Microsoft";
+            document.getElementById('category-val').value = ticket.category || "Felanmälan";
+            document.getElementById('group-val').value = ticket.group || "1st Line";
+            document.getElementById('source-val').value = ticket.source || "Portal";
+            document.getElementById('mgmt-cust').value = ticket.customer;
+            document.getElementById('mgmt-agent').value = ticket.agent || "";
+
+            // Intern logg
+            const notesList = document.getElementById('internal-notes-list');
+            notesList.innerHTML = (ticket.internalNotes || []).map(n => `
+                <div class="p-5 bg-slate-900/60 rounded-2xl border-l-4 border-blue-500 mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] font-black uppercase text-blue-400 tracking-widest">${n.agent}</span>
+                        <span class="text-[9px] font-bold text-slate-500 uppercase">${n.date}</span>
+                    </div>
+                    <p class="text-slate-200 text-xs italic font-medium">${n.text}</p>
+                    ${renderAttachment(n.file, n.fileName)}
+                </div>
+            `).join('');
+
+            // Historik
+            const histList = document.getElementById('history-list');
+            const replies = ticket.replies ? [...ticket.replies].reverse() : [];
+            histList.innerHTML = replies.map(r => `
+                <div class="bg-white border border-slate-100 p-10 rounded-[3rem] shadow-sm ml-12">
+                    <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-4">${r.date} - ${r.agent || 'Kund Portal'}</p>
+                    <p class="text-xs text-slate-600 italic leading-relaxed font-medium">${r.text}</p>
+                    ${renderAttachment(r.file, r.fileName)}
+                </div>
+            `).join('');
+
+            const pill = document.getElementById('status-pill');
+            pill.innerText = ticket.status;
+            pill.className = `px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${ticket.status === 'Resolved' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`;
+            
+            document.getElementById('resolve-btn').style.display = ticket.status === 'Resolved' ? 'none' : 'block';
+        }
+
+        async function updateTicket(silent = false) {
+            ticket.status = document.getElementById('status-val').value;
+            ticket.service = document.getElementById('service-val').value;
+            ticket.category = document.getElementById('category-val').value;
+            ticket.group = document.getElementById('group-val').value;
+            ticket.source = document.getElementById('source-val').value;
+            ticket.customer = document.getElementById('mgmt-cust').value;
+            ticket.agent = document.getElementById('mgmt-agent').value;
+
+            await fetch('/api/create', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(ticket) 
+            });
+            if(!silent) showIndicator('save-status');
+            renderTicket();
+        }
+
+        function handleFile(type) {
+            const input = document.getElementById(type + '-file');
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                tempFiles[type].data = e.target.result;
+                tempFiles[type].name = file.name;
+                
+                const previewBox = document.getElementById(type + '-preview-box');
+                const previewName = document.getElementById(type + '-preview-name');
+                if(previewBox) previewBox.classList.remove('hidden');
+                if(previewBox) previewBox.classList.add('flex');
+                if(previewName) previewName.innerText = "Vald: " + file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearFile(type) {
+            tempFiles[type] = { data: null, name: "" };
+            const previewBox = document.getElementById(type + '-preview-box');
+            if(previewBox) previewBox.classList.add('hidden');
+            const fileInput = document.getElementById(type + '-file');
+            if(fileInput) fileInput.value = "";
+        }
+
+        async function addInternalNote() {
+            const input = document.getElementById('internal-note-input');
+            if(!input.value.trim() && !tempFiles.internal.data) return;
+
+            if(!ticket.internalNotes) ticket.internalNotes = [];
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('sv-SE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+            ticket.internalNotes.unshift({ 
+                agent: currentUser.name, 
+                date: dateStr, 
+                text: input.value.trim(), 
+                file: tempFiles.internal.data, 
+                fileName: tempFiles.internal.name 
+            });
+
+            input.value = "";
+            clearFile('internal');
+            await updateTicket(true);
+            renderTicket();
+        }
+
+        async function sendReply() {
+            const replyText = document.getElementById('reply-text').value;
+            if(!replyText && !tempFiles.reply.data) return;
+
+            if(!ticket.replies) ticket.replies = [];
+            ticket.replies.push({ 
+                date: new Date().toLocaleString('sv-SE'), 
+                agent: currentUser.name, 
+                text: replyText,
+                file: tempFiles.reply.data,
+                fileName: tempFiles.reply.name
+            });
+
+            document.getElementById('reply-text').value = "";
+            clearFile('reply');
+            await updateTicket();
+            renderTicket();
+        }
+
+        function showIndicator(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.classList.add('show');
+                setTimeout(() => el.classList.remove('show'), 2000);
+            }
+        }
+
+        function markAsResolved() {
+            document.getElementById('status-val').value = "Resolved";
+            updateTicket();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

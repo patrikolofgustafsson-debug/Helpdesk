@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ärenden - Eventful Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="shared.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;700;900&display=swap');
+        html, body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        
+        #main-content { 
+            margin-left: 16rem; 
+            padding: 3rem; 
+            min-height: 100vh; 
+            position: relative;
+            z-index: 1;
+        }
+        .notes-scroll::-webkit-scrollbar { height: 4px; }
+        .notes-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .action-button {
+            position: relative;
+            z-index: 999;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+
+        /* Styling för att dölja standardpilen i select och köra modern design */
+        .filter-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1.25rem center;
+            background-size: 0.75rem;
+        }
+
+        @media (max-width: 1024px) { #main-content { margin-left: 0; padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+    <div id="main-content">
+        <div class="mb-10 bg-[#FFFDF0] border border-[#FEEFB3] rounded-[3rem] p-8 shadow-sm">
+            <h3 class="text-[#B98900] text-[10px] font-black uppercase tracking-[0.2em] mb-6">Viktiga meddelanden för agenter</h3>
+            <div class="flex gap-4 overflow-x-auto pb-2 notes-scroll">
+                <div class="min-w-[350px] bg-white p-6 rounded-[2rem] border border-[#FEEFB3]/50 shadow-sm">
+                    <p class="text-slate-600 text-sm italic font-medium">
+                        <strong class="text-slate-800 not-italic">Systemstatus:</strong> Inga kända störningar.
+                    </p>
+                </div>
+                <div class="min-w-[350px] bg-white p-6 rounded-[2rem] border border-[#FEEFB3]/50 shadow-sm">
+                    <p class="text-slate-600 text-sm italic font-medium">
+                        <strong class="text-slate-800 not-italic">Info:</strong> Glöm inte att tagga rätt tjänst för statistik.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <header class="flex justify-between items-start mb-10">
+            <div>
+                <h2 class="text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] mb-2 italic">Support Management</h2>
+                <h1 class="text-7xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">Ärenden</h1>
+            </div>
+            
+            <button onclick="openCreateModal()" class="action-button bg-[#2563EB] text-white px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all">
+                <i class="fas fa-plus mr-2"></i> Nytt Ärende
+            </button>
+        </header>
+
+        <div class="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 mb-8 space-y-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                <input type="text" id="ticketSearch" oninput="render()" placeholder="Sök på ämne, kund eller ID..." class="w-full p-5 pl-14 bg-slate-50 rounded-2xl border-none font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <select id="filter-service" onchange="render()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black uppercase text-[10px] tracking-widest text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Tjänst (Alla)</option>
+                    <option value="Microsoft">Microsoft</option>
+                    <option value="Google">Google</option>
+                    <option value="DNP">DNP</option>
+                    <option value="Hårdvara">Hårdvara</option>
+                </select>
+
+                <select id="filter-category" onchange="render()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black uppercase text-[10px] tracking-widest text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Typ (Alla)</option>
+                    <option value="Felanmälan">Felanmälan</option>
+                    <option value="Justering">Justering</option>
+                    <option value="Beställning">Beställning</option>
+                </select>
+
+                <select id="filter-status" onchange="render()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black uppercase text-[10px] tracking-widest text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Status (Alla)</option>
+                    <option value="Open">Öppen (Open)</option>
+                    <option value="Resolved">Löst (Resolved)</option>
+                </select>
+
+                <select id="filter-agent" onchange="render()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black uppercase text-[10px] tracking-widest text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Agent (Alla)</option>
+                    </select>
+
+                <select id="filter-group" onchange="render()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black uppercase text-[10px] tracking-widest text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Grupp (Alla)</option>
+                    <option value="1st Line">1st Line</option>
+                    <option value="2nd Line">2nd Line</option>
+                    <option value="Drift">Drift</option>
+                    <option value="Hårdvaruteam">Hårdvaruteam</option>
+                </select>
+
+                <select id="filter-source" onchange="render()" class="filter-select w-full p-4 pr-10 bg-slate-50 rounded-xl border-none font-black uppercase text-[10px] tracking-widest text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Källa (Alla)</option>
+                    <option value="E-post">E-post</option>
+                    <option value="Telefon">Telefon</option>
+                    <option value="Portal">Portal</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 border-b border-slate-100">
+                    <tr>
+                        <th class="p-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">ID</th>
+                        <th class="p-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Ämne / Detaljer</th>
+                        <th class="p-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Kund</th>
+                        <th class="p-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Handläggare</th>
+                        <th class="p-8 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="ticketList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="createModal" style="display:none;" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm items-center justify-center p-4 z-[9999]">
+        <div class="bg-white w-full max-w-xl rounded-[3.5rem] p-12 shadow-2xl relative">
+            <h3 class="text-3xl font-black mb-8 uppercase italic tracking-tighter text-slate-800">Skapa ärende</h3>
+            <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <select id="in-cust" class="p-5 bg-slate-50 rounded-2xl border-none font-bold text-xs outline-none"></select>
+                    <select id="in-service" class="p-5 bg-slate-50 rounded-2xl border-none font-bold text-xs outline-none">
+                        <option value="Microsoft">Microsoft</option>
+                        <option value="Google">Google</option>
+                        <option value="DNP">DNP</option>
+                        <option value="Hårdvara">Hårdvara</option>
+                    </select>
+                </div>
+                <input id="in-title" type="text" placeholder="Rubrik" class="w-full p-5 bg-slate-50 rounded-2xl border-none font-bold text-xs outline-none">
+                <textarea id="in-desc" placeholder="Beskrivning..." class="w-full p-5 bg-slate-50 rounded-2xl border-none font-medium text-xs h-32 outline-none"></textarea>
+                
+                <div class="flex gap-4 pt-4">
+                    <button onclick="closeCreateModal()" class="flex-1 py-4 text-slate-400 font-black uppercase text-[10px]">Avbryt</button>
+                    <button onclick="saveTicket()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Spara</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allTickets = [];
+        let allCustomers = [];
+
+        async function init() {
+            const [tRes, cRes, aRes] = await Promise.all([
+                fetch('/api/tickets?t=' + Date.now()),
+                fetch('/api/customers'),
+                fetch('/api/agents')
+            ]);
+            allTickets = await tRes.json();
+            allCustomers = await cRes.json();
+            const agents = await aRes.json();
+
+            // Fyll i kund-dropdown i skapamodalen
+            document.getElementById('in-cust').innerHTML = allCustomers.map(c => 
+                `<option value="${c.name}">${c.name}</option>`
+            ).join('');
+
+            // Fyll i Agent-dropdown dynamiskt i filtret
+            const agentFilter = document.getElementById('filter-agent');
+            agentFilter.innerHTML = '<option value="">Agent (Alla)</option>' + agents.map(a => 
+                `<option value="${a.name}">${a.name}</option>`
+            ).join('');
+
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('ticketList');
+            
+            // Hämta värden från alla filter
+            const search = document.getElementById('ticketSearch').value.toLowerCase();
+            const filterSvc = document.getElementById('filter-service').value;
+            const filterCat = document.getElementById('filter-category').value;
+            const filterStatus = document.getElementById('filter-status').value;
+            const filterAgent = document.getElementById('filter-agent').value;
+            const filterGroup = document.getElementById('filter-group').value;
+            const filterSource = document.getElementById('filter-source').value;
+
+            // Avancerad multianpassad filtrering
+            const filtered = allTickets.filter(t => {
+                const matchesSearch = t.id.toString().includes(search) || 
+                                      (t.title && t.title.toLowerCase().includes(search)) || 
+                                      (t.customer && t.customer.toLowerCase().includes(search));
+                
+                const matchesSvc = !filterSvc || t.service === filterSvc;
+                const matchesCat = !filterCat || t.category === filterCat;
+                const matchesStatus = !filterStatus || t.status === filterStatus;
+                const matchesAgent = !filterAgent || t.agent === filterAgent;
+                const matchesGroup = !filterGroup || t.group === filterGroup;
+                const matchesSource = !filterSource || t.source === filterSource;
+
+                return matchesSearch && matchesSvc && matchesCat && matchesStatus && matchesAgent && matchesGroup && matchesSource;
+            });
+
+            list.innerHTML = filtered.slice().reverse().map(t => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.location.href='ticket-one-ticket.html?id=${t.id}'">
+                    <td class="p-8 font-mono text-[11px] font-black text-blue-500">#${t.id}</td>
+                    <td class="p-8">
+                        <p class="text-sm font-black uppercase italic text-slate-800 leading-tight">${t.title || 'Utan rubrik'}</p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-black uppercase tracking-wider">${t.service || 'Övrigt'}</span>
+                            ${t.category ? `<span class="text-[9px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded font-black uppercase tracking-wider">${t.category}</span>` : ''}
+                            ${t.group ? `<span class="text-[9px] bg-purple-50 text-purple-500 px-2 py-0.5 rounded font-black uppercase tracking-wider">${t.group}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="p-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                        ${t.customer || 'Odefinierad'}
+                    </td>
+                    <td class="p-8 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-user text-slate-300 text-xs"></i>
+                            <span>${t.agent || 'Otilldelat'}</span>
+                        </div>
+                    </td>
+                    <td class="p-8 text-right">
+                        <span class="px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${t.status === 'Open' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}">
+                            ${t.status || 'Open'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
+
+        async function saveTicket() {
+            const data = {
+                title: document.getElementById('in-title').value,
+                customer: document.getElementById('in-cust').value,
+                service: document.getElementById('in-service').value,
+                desc: document.getElementById('in-desc').value,
+                status: 'Open',
+                category: 'Felanmälan', // Standard
+                group: '1st Line',      // Standard
+                source: 'Portal'        // Standard
+            };
+            const res = await fetch('/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                closeCreateModal();
+                setTimeout(init, 300);
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
