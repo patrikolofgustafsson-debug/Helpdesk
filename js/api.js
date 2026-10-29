@@ -1,0 +1,4 @@
+import{API_BASE}from'./config.js';
+const token=()=>sessionStorage.getItem('deskToken')||'';
+export async function api(path,options={}){const h=new Headers(options.headers||{});if(!h.has('Content-Type')&&options.body)h.set('Content-Type','application/json');if(token())h.set('Authorization','Bearer '+token());const r=await fetch(API_BASE+path,{...options,headers:h});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data={error:text}}if(r.status===401){sessionStorage.removeItem('deskToken');sessionStorage.removeItem('deskUser');if(!location.pathname.endsWith('login.html'))location.href='login.html'}if(!r.ok)throw new Error(data.error||data.message||`HTTP ${r.status}`);return data}
+export const get=p=>api(p);export const post=(p,b)=>api(p,{method:'POST',body:JSON.stringify(b)});export const put=(p,b)=>api(p,{method:'PUT',body:JSON.stringify(b)});export const del=(p,b)=>api(p,{method:'DELETE',body:JSON.stringify(b)});

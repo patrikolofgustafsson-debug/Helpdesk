@@ -1,0 +1,1 @@
+export const $=s=>document.querySelector(s);export const esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');export function msg(t,e=false){const x=$('#message');if(x){x.textContent=t;x.classList.toggle('error',e)}}export const qs=n=>new URLSearchParams(location.search).get(n);export const date=v=>v?new Date(v).toLocaleString('sv-SE'):'';
