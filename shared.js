@@ -1,1 +1,15 @@
-document.addEventListener('DOMContentLoaded',()=>{const p=location.pathname.split('/').pop()||'index.html';if(['login.html','customer-tickets.html','customer-ticket-one.html'].includes(p)) return;const nav=[['index.html','fa-chart-line','Dashboard'],['tickets.html','fa-ticket','Ärenden'],['customers.html','fa-building','Kunder'],['agents.html','fa-users','Agenter'],['kb.html','fa-book','Kunskapsbas'],['settings.html','fa-gear','Inställningar']];const aside=document.createElement('aside');aside.className='fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white p-6 z-40 hidden lg:block';aside.innerHTML=`<div class="mb-10"><div class="text-blue-400 text-[10px] font-black uppercase tracking-[.3em]">Support Management</div><div class="text-2xl font-black italic uppercase">Eventful Desk</div></div><nav class="space-y-2">${nav.map(([u,i,t])=>`<a href="${u}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black uppercase ${p===u?'bg-blue-600':'text-slate-400 hover:bg-slate-800 hover:text-white'}"><i class="fas ${i}"></i>${t}</a>`).join('')}</nav><button id="logoutDesk" class="absolute bottom-6 left-6 right-6 bg-slate-800 px-4 py-3 rounded-xl text-[10px] font-black uppercase text-slate-300">Logga ut</button>`;document.body.appendChild(aside);document.getElementById('logoutDesk').onclick=()=>{localStorage.removeItem('loggedUser');sessionStorage.removeItem('supportAdminKey');location.href='login.html'};});
+document.addEventListener('DOMContentLoaded',()=>{
+  const p=location.pathname.split('/').pop()||'index.html';
+  if(['login.html','customer-tickets.html','customer-ticket-one.html'].includes(p)) return;
+  const nav=[['index.html','fa-chart-line','Dashboard'],['tickets.html','fa-ticket','Ärenden'],['customers.html','fa-building','Kunder'],['agents.html','fa-users','Agenter'],['kb.html','fa-book','Kunskapsbas'],['settings.html','fa-gear','Inställningar']];
+  const aside=document.createElement('aside');
+  aside.id='deskSidebar';
+  aside.className='desk-sidebar fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white p-6 z-40';
+  aside.innerHTML=`<div class="mb-10"><div class="text-blue-400 text-[10px] font-black uppercase tracking-[.3em]">Support Management</div><div class="text-2xl font-black italic uppercase">Eventful Desk</div></div><nav class="space-y-2">${nav.map(([u,i,t])=>`<a href="${u}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black uppercase ${p===u?'bg-blue-600':'text-slate-400 hover:bg-slate-800 hover:text-white'}"><i class="fas ${i}"></i>${t}</a>`).join('')}</nav><button id="logoutDesk" class="absolute bottom-6 left-6 right-6 bg-slate-800 px-4 py-3 rounded-xl text-[10px] font-black uppercase text-slate-300">Logga ut</button>`;
+  document.body.appendChild(aside);
+  const btn=document.createElement('button');
+  btn.id='menuToggle'; btn.className='desk-menu-toggle'; btn.innerHTML='<i class="fas fa-bars"></i>';
+  document.body.appendChild(btn);
+  btn.onclick=()=>aside.classList.toggle('open');
+  document.getElementById('logoutDesk').onclick=()=>{localStorage.removeItem('loggedUser');sessionStorage.removeItem('supportAdminKey');location.href='login.html'};
+});
