@@ -1,1 +1,219 @@
-<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agenter - Eventful Desk</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"></head><body><main class="page"><div class="toolbar"><h1 class="title" style="flex:1">Agenter</h1><button id="newBtn" class="btn btn-primary">Ny agent</button></div><div id="cards" class="grid grid-2"></div></main><div id="modal" class="modal"><div class="modal-box stack"><h2>Agent</h2><input id="id" type="hidden"><input id="name" class="input" placeholder="Namn"><input id="email" class="input" placeholder="E-post"><input id="password" type="password" class="input" placeholder="Tillfälligt lösenord"><select id="role" class="input"><option value="agent">Agent</option><option value="admin">Administratör</option></select><button id="save" class="btn btn-primary">Spara</button><button id="close" class="btn btn-light">Stäng</button><div id="message" class="status"></div></div></div><script type="module">import{mount}from'./js/layout.js';import{requireRole}from'./js/auth.js';import{get,post,put,del}from'./js/api.js';import{esc,msg}from'./js/util.js';await requireRole(['admin']);mount('agents.html');let D=[];async function load(){D=await get('/api/agents');cards.innerHTML=D.map(x=>`<div class="card"><h3>${esc(x.name)}</h3><p>${esc(x.email)}</p><span class="pill">${esc(x.role)}</span><button class="btn btn-light" onclick="editAgent('${x.id}')">Redigera</button><button class="btn btn-danger" onclick="deleteAgent('${x.id}','${esc(x.name)}')">Ta bort</button></div>`).join('')}function open(x={}){id.value=x.id||'';name.value=x.name||'';email.value=x.email||'';password.value='';role.value=x.role||'agent';modal.classList.add('open')}window.editAgent=i=>open(D.find(x=>x.id===i));newBtn.onclick=()=>open();close.onclick=()=>modal.classList.remove('open');save.onclick=async()=>{try{const b={name:name.value,email:email.value,password:password.value,role:role.value};id.value?await put('/api/agents/'+id.value,b):await post('/api/agents',b);modal.classList.remove('open');load()}catch(e){msg(e.message,true)}};window.deleteAgent=async(i,n)=>{if(!confirm('Ta bort agenten '+n+'? Agentens inloggningskonto tas också bort.'))return;try{await del('/api/agents/'+encodeURIComponent(i));await load()}catch(e){msg(e.message,true)}};load();</script></body></html>
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agenter - Eventful Desk</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<main class="page">
+  <div class="toolbar">
+    <h1 class="title" style="flex:1">Agenter</h1>
+    <button id="newBtn" class="btn btn-primary">Ny agent</button>
+  </div>
+  <div id="message" class="status"></div>
+  <div id="cards" class="grid grid-2"></div>
+</main>
+
+<div id="modal" class="modal">
+  <div class="modal-box stack">
+    <h2 id="modalTitle">Agent</h2>
+    <input id="agentId" type="hidden">
+    <input id="agentName" class="input" placeholder="Namn">
+    <input id="agentEmail" class="input" placeholder="E-post">
+    <input id="agentPassword" type="password" class="input" placeholder="Tillfälligt lösenord (lämna tomt för att behålla)">
+    <select id="agentRole" class="input">
+      <option value="agent">Agent</option>
+      <option value="admin">Administratör</option>
+    </select>
+    <button id="saveBtn" class="btn btn-primary">Spara</button>
+    <button id="closeBtn" class="btn btn-light">Stäng</button>
+    <div id="modalMessage" class="status"></div>
+  </div>
+</div>
+
+<script type="module">
+import { mount } from './js/layout.js';
+import { requireRole } from './js/auth.js';
+import { get, post, put, del } from './js/api.js';
+import { esc } from './js/util.js';
+
+await requireRole(['admin']);
+mount('agents.html');
+
+const cardsEl = document.getElementById('cards');
+const messageEl = document.getElementById('message');
+const modalEl = document.getElementById('modal');
+const modalTitleEl = document.getElementById('modalTitle');
+const idEl = document.getElementById('agentId');
+const nameEl = document.getElementById('agentName');
+const emailEl = document.getElementById('agentEmail');
+const passwordEl = document.getElementById('agentPassword');
+const roleEl = document.getElementById('agentRole');
+const newBtnEl = document.getElementById('newBtn');
+const saveBtnEl = document.getElementById('saveBtn');
+const closeBtnEl = document.getElementById('closeBtn');
+const modalMessageEl = document.getElementById('modalMessage');
+
+let agents = [];
+
+function showMessage(text, error = false) {
+  messageEl.textContent = text;
+  messageEl.classList.toggle('error', error);
+}
+
+function showModalMessage(text, error = false) {
+  modalMessageEl.textContent = text;
+  modalMessageEl.classList.toggle('error', error);
+}
+
+function renderAgents() {
+  cardsEl.innerHTML = agents.map(agent => `
+    <div class="card" data-agent-id="${esc(agent.id)}">
+      <h3>${esc(agent.name)}</h3>
+      <p>${esc(agent.email)}</p>
+      <div class="toolbar" style="margin:14px 0 0">
+        <span class="pill">${esc(agent.role)}</span>
+        <button class="btn btn-light" data-action="edit" data-id="${esc(agent.id)}">Redigera</button>
+        <button class="btn btn-danger" data-action="delete" data-id="${esc(agent.id)}">Ta bort</button>
+      </div>
+    </div>
+  `).join('');
+
+  cardsEl.querySelectorAll('[data-action="edit"]').forEach(button => {
+    button.addEventListener('click', () => openEdit(button.dataset.id));
+  });
+
+  cardsEl.querySelectorAll('[data-action="delete"]').forEach(button => {
+    button.addEventListener('click', () => removeAgent(button.dataset.id));
+  });
+}
+
+async function loadAgents() {
+  try {
+    agents = await get('/api/agents');
+    renderAgents();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+function resetForm() {
+  idEl.value = '';
+  nameEl.value = '';
+  emailEl.value = '';
+  passwordEl.value = '';
+  roleEl.value = 'agent';
+  showModalMessage('');
+}
+
+function openNew() {
+  resetForm();
+  modalTitleEl.textContent = 'Ny agent';
+  passwordEl.placeholder = 'Tillfälligt lösenord';
+  modalEl.classList.add('open');
+  nameEl.focus();
+}
+
+function openEdit(id) {
+  const agent = agents.find(item => String(item.id) === String(id));
+  if (!agent) {
+    showMessage('Agenten kunde inte hittas i den lokala listan.', true);
+    return;
+  }
+
+  resetForm();
+  modalTitleEl.textContent = 'Redigera agent';
+  idEl.value = agent.id;
+  nameEl.value = agent.name || '';
+  emailEl.value = agent.email || '';
+  roleEl.value = agent.role || 'agent';
+  passwordEl.placeholder = 'Nytt lösenord (lämna tomt för att behålla)';
+  modalEl.classList.add('open');
+  nameEl.focus();
+}
+
+function closeModal() {
+  modalEl.classList.remove('open');
+}
+
+async function saveAgent() {
+  const id = idEl.value.trim();
+  const payload = {
+    name: nameEl.value.trim(),
+    email: emailEl.value.trim(),
+    role: roleEl.value
+  };
+
+  if (passwordEl.value) {
+    payload.password = passwordEl.value;
+  }
+
+  if (!payload.name || !payload.email) {
+    showModalMessage('Namn och e-post måste fyllas i.', true);
+    return;
+  }
+
+  saveBtnEl.disabled = true;
+  saveBtnEl.textContent = 'Sparar...';
+
+  try {
+    let saved;
+
+    if (id) {
+      saved = await put('/api/agents/' + encodeURIComponent(id), payload);
+      const index = agents.findIndex(item => String(item.id) === String(id));
+      if (index >= 0) agents[index] = saved;
+      else agents.push(saved);
+      showMessage('Agenten har uppdaterats.');
+    } else {
+      saved = await post('/api/agents', payload);
+      agents.push(saved);
+      showMessage('Agenten har skapats.');
+    }
+
+    renderAgents();
+    closeModal();
+  } catch (error) {
+    showModalMessage(error.message, true);
+  } finally {
+    saveBtnEl.disabled = false;
+    saveBtnEl.textContent = 'Spara';
+  }
+}
+
+async function removeAgent(id) {
+  const agent = agents.find(item => String(item.id) === String(id));
+  if (!agent) return;
+
+  const confirmed = confirm(
+    `Ta bort agenten ${agent.name}?\n\nAgentens inloggningskonto tas också bort.`
+  );
+  if (!confirmed) return;
+
+  try {
+    await del('/api/agents/' + encodeURIComponent(id));
+    agents = agents.filter(item => String(item.id) !== String(id));
+    renderAgents();
+    showMessage('Agenten har tagits bort.');
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+newBtnEl.addEventListener('click', openNew);
+closeBtnEl.addEventListener('click', closeModal);
+saveBtnEl.addEventListener('click', saveAgent);
+modalEl.addEventListener('click', event => {
+  if (event.target === modalEl) closeModal();
+});
+
+await loadAgents();
+</script>
+</body>
+</html>
