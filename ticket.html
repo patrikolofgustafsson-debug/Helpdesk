@@ -1,12 +1,155 @@
 <!doctype html>
-<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ärende - Eventful Desk</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head>
-<body><main class="page"><p><a href="tickets.html">← Tillbaka</a></p><h1 id="heading" class="title" style="font-size:38px">Ärende</h1><div class="grid grid-2"><div><div class="card"><p id="desc"></p></div><div id="timeline" class="grid" style="margin-top:20px"></div><div class="card stack" style="margin-top:20px"><textarea id="reply" class="input" rows="5" placeholder="Svara kunden..."></textarea><button id="send" class="btn btn-primary">Skicka svar</button><textarea id="note" class="input" rows="3" placeholder="Intern anteckning..."></textarea><button id="addNote" class="btn btn-light">Lägg intern anteckning</button><div id="message" class="status"></div></div></div><div class="card stack" style="height:max-content"><label>Status<select id="status" class="input"><option>Open</option><option>Pending</option><option>Resolved</option></select></label><label>Prioritet<select id="priority" class="input"><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></label><label>Agent<select id="agent" class="input"></select></label><label>Tjänst<select id="service" class="input"></select></label><label>Kategori<select id="category" class="input"></select></label><button id="save" class="btn btn-primary">Spara</button></div></div></main>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ärende - Eventful Desk</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+.internal-note-box{background:#dbeafe;border:2px solid #60a5fa;border-radius:24px;padding:22px;margin-top:20px}
+.internal-note-box h3{margin:0 0 6px;color:#1e3a8a;font-size:18px}
+.internal-note-box p{margin:0 0 14px;color:#1e40af;font-size:13px;font-weight:700}
+.internal-note-box textarea{background:#eff6ff;border-color:#93c5fd}
+.internal-note-box .btn{background:#2563eb;color:#fff}
+.timeline-note{background:#dbeafe!important;border-left:6px solid #2563eb}
+.timeline-note small{color:#1e40af;font-weight:900}
+.timeline-message{background:#fff}
+.note-badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#2563eb;color:#fff;font-size:10px;font-weight:900;text-transform:uppercase;margin-right:7px}
+</style>
+</head>
+<body>
+<main class="page">
+  <p><a href="tickets.html">← Tillbaka</a></p>
+  <h1 id="heading" class="title" style="font-size:38px">Ärende</h1>
+
+  <div class="grid grid-2">
+    <div>
+      <div class="card"><p id="desc"></p></div>
+      <div id="timeline" class="grid" style="margin-top:20px"></div>
+
+      <div class="card stack" style="margin-top:20px">
+        <h3>Svara kunden</h3>
+        <textarea id="reply" class="input" rows="5" placeholder="Skriv ett svar som kunden kan se..."></textarea>
+        <button id="sendReply" class="btn btn-primary">Skicka svar</button>
+      </div>
+
+      <div class="internal-note-box">
+        <h3><i class="fa fa-lock"></i> Intern anteckning</h3>
+        <p>Endast synlig för agenter och administratörer. Kunden kan aldrig se anteckningen.</p>
+        <textarea id="internalNote" class="input" rows="4" maxlength="6000" placeholder="Skriv en intern anteckning..."></textarea>
+        <button id="saveNote" class="btn">Spara intern anteckning</button>
+        <div id="noteMessage" class="status"></div>
+      </div>
+
+      <div id="message" class="status"></div>
+    </div>
+
+    <div class="card stack" style="height:max-content">
+      <label>Status
+        <select id="status" class="input"><option>Open</option><option>Pending</option><option>Resolved</option></select>
+      </label>
+      <label>Prioritet
+        <select id="priority" class="input"><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select>
+      </label>
+      <label>Agent<select id="agent" class="input"></select></label>
+      <label>Tjänst<select id="service" class="input"></select></label>
+      <label>Kategori<select id="category" class="input"></select></label>
+      <button id="saveTicket" class="btn btn-primary">Spara</button>
+    </div>
+  </div>
+</main>
+
 <script type="module">
-import{mount}from'./js/layout.js';import{requireRole,user}from'./js/auth.js';import{get,put,post}from'./js/api.js';import{esc,date,qs}from'./js/util.js';
-await requireRole(['admin','agent']);mount('tickets.html');const id=qs('id');let currentUser=user(),ticket=await get('/api/tickets/'+encodeURIComponent(id));const [agents,settings]=await Promise.all([get('/api/agents'),get('/api/settings')]);
-const serviceEl=document.getElementById('service'),categoryEl=document.getElementById('category'),agentEl=document.getElementById('agent'),statusEl=document.getElementById('status'),priorityEl=document.getElementById('priority'),messageEl=document.getElementById('message');
-function optionList(values,current,empty){let vals=[...(values||[])];if(current&&!vals.includes(current))vals.unshift(current);return (empty?`<option value="">${empty}</option>`:'')+vals.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}
-function draw(){heading.textContent='#'+ticket.id+' '+ticket.subject;desc.textContent=ticket.description||'';statusEl.value=ticket.status||'Open';priorityEl.value=ticket.priority||'Normal';agentEl.innerHTML='<option value="">Otilldelat</option>'+agents.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');agentEl.value=ticket.assignedAgentId||'';serviceEl.innerHTML=optionList(settings.services,ticket.service,'Välj tjänst');serviceEl.value=ticket.service||'';categoryEl.innerHTML=optionList(settings.categories,ticket.category,'Välj kategori');categoryEl.value=ticket.category||'';timeline.innerHTML=[...(ticket.messages||[]).map(x=>({...x,type:'Svar'})),...(ticket.internalNotes||[]).map(x=>({...x,type:'Internt'}))].sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).map(x=>`<div class="card"><small>${esc(x.type)} · ${esc(x.authorName)} · ${date(x.createdAt)}</small><p>${esc(x.text)}</p></div>`).join('')}
-async function saveTicket(){try{ticket=await put('/api/tickets/'+encodeURIComponent(id),{status:statusEl.value,priority:priorityEl.value,service:serviceEl.value,category:categoryEl.value,assignedAgentId:agentEl.value||null});messageEl.textContent='Sparat.';draw()}catch(e){messageEl.textContent=e.message;messageEl.classList.add('error')}}
-document.getElementById('save').onclick=saveTicket;document.getElementById('send').onclick=async()=>{const el=document.getElementById('reply');if(!el.value.trim())return;ticket=await post('/api/tickets/'+encodeURIComponent(id)+'/messages',{text:el.value});el.value='';draw()};document.getElementById('addNote').onclick=async()=>{const el=document.getElementById('note');if(!el.value.trim())return;ticket=await post('/api/tickets/'+encodeURIComponent(id)+'/notes',{text:el.value});el.value='';draw()};draw();
-</script></body></html>
+import { mount } from './js/layout.js';
+import { requireRole } from './js/auth.js';
+import { get, put, post } from './js/api.js';
+import { esc, date, qs } from './js/util.js';
+
+await requireRole(['admin','agent']);
+mount('tickets.html');
+
+const ticketId = qs('id');
+const headingEl = document.getElementById('heading');
+const descEl = document.getElementById('desc');
+const timelineEl = document.getElementById('timeline');
+const replyEl = document.getElementById('reply');
+const noteEl = document.getElementById('internalNote');
+const messageEl = document.getElementById('message');
+const noteMessageEl = document.getElementById('noteMessage');
+const statusEl = document.getElementById('status');
+const priorityEl = document.getElementById('priority');
+const agentEl = document.getElementById('agent');
+const serviceEl = document.getElementById('service');
+const categoryEl = document.getElementById('category');
+const sendReplyBtn = document.getElementById('sendReply');
+const saveNoteBtn = document.getElementById('saveNote');
+const saveTicketBtn = document.getElementById('saveTicket');
+
+let ticket = await get('/api/tickets/' + encodeURIComponent(ticketId));
+const [agents, settings] = await Promise.all([get('/api/agents'), get('/api/settings')]);
+
+function showMessage(el, text, error=false){el.textContent=text;el.classList.toggle('error',error)}
+function optionList(values,current,empty){const list=[...(values||[])];if(current&&!list.includes(current))list.unshift(current);return(empty?`<option value="">${empty}</option>`:'')+list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}
+
+function renderTimeline(){
+  const entries = [
+    ...(ticket.messages||[]).map(x=>({...x,kind:'message'})),
+    ...(ticket.internalNotes||[]).map(x=>({...x,kind:'note'}))
+  ].sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+
+  timelineEl.innerHTML = entries.map(entry => {
+    const isNote = entry.kind === 'note';
+    return `<div class="card ${isNote?'timeline-note':'timeline-message'}">
+      <small>${isNote?'<span class="note-badge"><i class="fa fa-lock"></i> Internt</span>':'Svar'} · ${esc(entry.authorName||'Okänd')} · ${date(entry.createdAt)}</small>
+      <p>${esc(entry.text||'')}</p>
+    </div>`;
+  }).join('');
+}
+
+function draw(){
+  headingEl.textContent='#'+ticket.id+' '+ticket.subject;
+  descEl.textContent=ticket.description||'';
+  statusEl.value=ticket.status||'Open';
+  priorityEl.value=ticket.priority||'Normal';
+  agentEl.innerHTML='<option value="">Otilldelat</option>'+agents.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+  agentEl.value=ticket.assignedAgentId||'';
+  serviceEl.innerHTML=optionList(settings.services,ticket.service,'Välj tjänst');
+  serviceEl.value=ticket.service||'';
+  categoryEl.innerHTML=optionList(settings.categories,ticket.category,'Välj kategori');
+  categoryEl.value=ticket.category||'';
+  renderTimeline();
+}
+
+saveTicketBtn.onclick=async()=>{
+  saveTicketBtn.disabled=true;
+  try{
+    ticket=await put('/api/tickets/'+encodeURIComponent(ticketId),{status:statusEl.value,priority:priorityEl.value,service:serviceEl.value,category:categoryEl.value,assignedAgentId:agentEl.value||null});
+    showMessage(messageEl,'Ärendet har sparats.');
+    draw();
+  }catch(error){showMessage(messageEl,error.message,true)}finally{saveTicketBtn.disabled=false}
+};
+
+sendReplyBtn.onclick=async()=>{
+  const text=replyEl.value.trim();
+  if(!text){showMessage(messageEl,'Skriv ett svar först.',true);return}
+  sendReplyBtn.disabled=true;sendReplyBtn.textContent='Skickar...';
+  try{ticket=await post('/api/tickets/'+encodeURIComponent(ticketId)+'/messages',{text});replyEl.value='';renderTimeline();showMessage(messageEl,'Svaret har skickats till kunden.')}catch(error){showMessage(messageEl,error.message,true)}finally{sendReplyBtn.disabled=false;sendReplyBtn.textContent='Skicka svar'}
+};
+
+saveNoteBtn.onclick=async()=>{
+  const text=noteEl.value.trim();
+  if(!text){showMessage(noteMessageEl,'Skriv en anteckning först.',true);return}
+  saveNoteBtn.disabled=true;saveNoteBtn.textContent='Sparar...';
+  try{
+    ticket=await post('/api/tickets/'+encodeURIComponent(ticketId)+'/notes',{text});
+    noteEl.value='';
+    renderTimeline();
+    showMessage(noteMessageEl,'Den interna anteckningen har sparats.');
+  }catch(error){showMessage(noteMessageEl,error.message,true)}finally{saveNoteBtn.disabled=false;saveNoteBtn.textContent='Spara intern anteckning'}
+};
+
+draw();
+</script>
+</body>
+</html>
