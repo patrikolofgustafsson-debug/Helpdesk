@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Klassificering - Eventful Desk</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Administration</p>
+  <h1 class="title">Klassificering</h1>
+  <div id="message" class="status"></div>
+  <div class="grid grid-2">
+    <section class="card">
+      <h2>Tjänster</h2><p>Alternativ i fältet <b>Tjänst</b> på ärenden.</p>
+      <div class="toolbar"><input id="newService" class="input" placeholder="Ex. FlowSync"><button id="addService" class="btn btn-primary">Lägg till</button></div>
+      <div id="services"></div>
+    </section>
+    <section class="card">
+      <h2>Kategorier</h2><p>Alternativ i fältet <b>Kategori</b> på ärenden.</p>
+      <div class="toolbar"><input id="newCategory" class="input" placeholder="Ex. Synk & integration"><button id="addCategory" class="btn btn-primary">Lägg till</button></div>
+      <div id="categories"></div>
+    </section>
+  </div>
+</main>
+<script type="module">
+import { mount } from './js/layout.js';
+import { requireRole } from './js/auth.js';
+import { get, put } from './js/api.js';
+import { esc } from './js/util.js';
+await requireRole(['admin']); mount('categories.html');
+const messageEl=document.getElementById('message'),servicesEl=document.getElementById('services'),categoriesEl=document.getElementById('categories'),newServiceEl=document.getElementById('newService'),newCategoryEl=document.getElementById('newCategory');
+let settings={systemName:'Eventful Desk',defaultService:'Microsoft 365',services:[],categories:[]};
+function show(t,e=false){messageEl.textContent=t;messageEl.classList.toggle('error',e)}
+function row(v,k,i){return `<div class="toolbar" style="border-bottom:1px solid #e2e8f0;padding:8px 0"><b style="flex:1">${esc(v)}</b><button class="btn btn-danger" data-kind="${k}" data-index="${i}">Ta bort</button></div>`}
+function render(){servicesEl.innerHTML=settings.services.length?settings.services.map((v,i)=>row(v,'services',i)).join(''):'<p>Inga tjänster registrerade.</p>';categoriesEl.innerHTML=settings.categories.length?settings.categories.map((v,i)=>row(v,'categories',i)).join(''):'<p>Inga kategorier registrerade.</p>';document.querySelectorAll('[data-kind]').forEach(b=>b.onclick=async()=>{const k=b.dataset.kind,i=Number(b.dataset.index);if(!confirm(`Ta bort ${settings[k][i]}?`))return;settings[k].splice(i,1);await save()})}
+async function save(){try{settings=await put('/api/settings',settings);render();show('Klassificeringen har sparats.')}catch(e){show(e.message,true)}}
+async function add(kind,input){const v=input.value.trim();if(!v)return;if(settings[kind].some(x=>x.toLowerCase()===v.toLowerCase())){show('Värdet finns redan.',true);return}settings[kind].push(v);input.value='';await save()}
+document.getElementById('addService').onclick=()=>add('services',newServiceEl);document.getElementById('addCategory').onclick=()=>add('categories',newCategoryEl);
+try{const s=await get('/api/settings');settings={...settings,...s,services:Array.isArray(s.services)?s.services:[],categories:Array.isArray(s.categories)?s.categories:[]};render()}catch(e){show(e.message,true)}
+</script></body></html>
