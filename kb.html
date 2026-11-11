@@ -1,1 +1,948 @@
-<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kunskapsbas - Eventful Desk</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"></head><body><main class="page"><div class="toolbar"><h1 class="title" style="flex:1">Kunskapsbas</h1><button id="newBtn" class="btn btn-primary">Ny artikel</button></div><input id="search" class="input" placeholder="Sök..." style="max-width:500px;margin-bottom:20px"><div id="cards" class="grid grid-2"></div></main><div id="modal" class="modal"><div class="modal-box stack"><input id="id" type="hidden"><input id="articleTitle" class="input" placeholder="Rubrik"><input id="category" class="input" placeholder="Kategori"><textarea id="content" class="input" rows="12" placeholder="Innehåll"></textarea><button id="save" class="btn btn-primary">Spara</button><button id="close" class="btn btn-light">Stäng</button></div></div><script type="module">import{mount}from'./js/layout.js';import{requireRole}from'./js/auth.js';import{get,post,put}from'./js/api.js';import{esc}from'./js/util.js';await requireRole(['admin','agent']);mount('kb.html');let D=[];async function load(){D=await get('/api/kb');render()}function render(){const q=search.value.toLowerCase();cards.innerHTML=D.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q)).map(x=>`<div class="card"><span class="eyebrow">${esc(x.category)}</span><h3>${esc(x.title)}</h3><p>${esc(x.content)}</p><button class="btn btn-light" onclick="editArticle('${x.id}')">Redigera</button></div>`).join('')}function open(x={}){id.value=x.id||'';articleTitle.value=x.title||'';category.value=x.category||'';content.value=x.content||'';modal.classList.add('open')}window.editArticle=i=>open(D.find(x=>x.id===i));newBtn.onclick=()=>open();close.onclick=()=>modal.classList.remove('open');search.oninput=render;save.onclick=async()=>{const b={title:articleTitle.value,category:category.value,content:content.value};id.value?await put('/api/kb/'+id.value,b):await post('/api/kb',b);modal.classList.remove('open');load()};load();</script></body></html>
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:,">
+  <title>Kunskapsbas · Eventful Desk</title>
+  <link rel="stylesheet" href="./css/app.css">
+  <style>
+    :root {
+      --kb-navy: #0d172c;
+      --kb-navy-2: #1c2a43;
+      --kb-blue: #2f67ed;
+      --kb-blue-dark: #1e4fc5;
+      --kb-blue-soft: #eaf1ff;
+      --kb-ink: #0c1529;
+      --kb-muted: #64748b;
+      --kb-line: #dbe4ef;
+      --kb-paper: #fff;
+      --kb-bg: #f4f7fb;
+      --kb-danger: #b91c1c;
+      --kb-success: #147a47;
+      --kb-shadow: 0 18px 52px rgba(15, 23, 42, .11);
+      --kb-radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--kb-bg); }
+    body { margin: 0; color: var(--kb-ink); background: var(--kb-bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .58; }
+    [hidden] { display: none !important; }
+
+    .kb-app { min-height: 100vh; display: grid; grid-template-columns: 268px minmax(0, 1fr); }
+    .kb-sidebar { position: sticky; top: 0; height: 100vh; padding: 30px 22px 24px; color: #fff; background: var(--kb-navy); display: flex; flex-direction: column; overflow-y: auto; }
+    .kb-brand-small { margin: 0 0 7px; color: #67a3ff; font-weight: 900; font-size: 13px; letter-spacing: .23em; line-height: 1.35; }
+    .kb-brand { margin: 0 0 34px; font-size: 27px; font-weight: 950; font-style: italic; letter-spacing: -.03em; line-height: 1.05; }
+    .kb-nav { display: grid; gap: 7px; }
+    .kb-nav a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px 14px; border-radius: 14px; color: #aebbd0; text-decoration: none; font-size: 14px; font-weight: 850; letter-spacing: .01em; }
+    .kb-nav a:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .kb-nav a[aria-current="page"] { color: #fff; background: var(--kb-blue); }
+    .kb-nav svg { width: 19px; height: 19px; flex: none; }
+    .kb-sidebar-spacer { flex: 1; min-height: 24px; }
+    .kb-logout { width: 100%; min-height: 52px; border: 0; border-radius: 14px; color: #dce6f6; background: var(--kb-navy-2); font-weight: 850; }
+    .kb-logout:hover { color: #fff; background: #263754; }
+
+    .kb-main { min-width: 0; padding: clamp(28px, 5vw, 64px); }
+    .kb-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+    .kb-eyebrow { margin: 0 0 8px; color: var(--kb-blue); font-size: 13px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+    .kb-title { margin: 0; font-size: clamp(42px, 6vw, 82px); font-weight: 950; font-style: italic; letter-spacing: -.055em; line-height: .96; text-transform: uppercase; }
+    .kb-subtitle { max-width: 720px; margin: 14px 0 0; color: var(--kb-muted); font-size: 16px; line-height: 1.55; }
+    .kb-primary { min-height: 50px; padding: 0 21px; border: 0; border-radius: 14px; color: #fff; background: var(--kb-blue); font-weight: 900; box-shadow: 0 8px 22px rgba(47,103,237,.2); }
+    .kb-primary:hover { background: var(--kb-blue-dark); transform: translateY(-1px); }
+    .kb-primary:active { transform: translateY(0); }
+
+    .kb-controls { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(190px, 260px); gap: 14px; margin-bottom: 18px; }
+    .kb-search-wrap { position: relative; }
+    .kb-search-wrap svg { position: absolute; left: 17px; top: 50%; width: 20px; height: 20px; color: #8190a6; transform: translateY(-50%); pointer-events: none; }
+    .kb-input, .kb-select { width: 100%; min-height: 52px; border: 1px solid var(--kb-line); border-radius: 15px; color: var(--kb-ink); background: #fff; outline: none; }
+    .kb-input { padding: 0 17px; }
+    .kb-search-wrap .kb-input { padding-left: 49px; }
+    .kb-select { padding: 0 42px 0 15px; }
+    .kb-input:focus, .kb-select:focus { border-color: var(--kb-blue); box-shadow: 0 0 0 4px rgba(47,103,237,.13); }
+    .kb-result-meta { min-height: 24px; margin: 0 0 16px; color: var(--kb-muted); font-size: 14px; }
+
+    .kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 295px), 1fr)); gap: 18px; }
+    .kb-card { min-width: 0; min-height: 250px; padding: 25px; border: 1px solid rgba(219,228,239,.7); border-radius: var(--kb-radius); background: var(--kb-paper); box-shadow: 0 12px 35px rgba(15,23,42,.065); display: flex; flex-direction: column; transition: transform .16s ease, box-shadow .16s ease; }
+    .kb-card:hover { transform: translateY(-3px); box-shadow: var(--kb-shadow); }
+    .kb-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .kb-chip { display: inline-flex; max-width: 100%; padding: 6px 10px; border-radius: 999px; color: #1f4fb9; background: var(--kb-blue-soft); font-size: 12px; font-weight: 850; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kb-card h2 { margin: 18px 0 10px; font-size: 23px; line-height: 1.16; letter-spacing: -.025em; }
+    .kb-excerpt { margin: 0; color: #546175; line-height: 1.58; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .kb-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 22px; }
+    .kb-date { color: #8793a5; font-size: 12px; }
+    .kb-card-actions { display: flex; gap: 7px; }
+    .kb-text-btn { min-height: 38px; padding: 0 11px; border: 0; border-radius: 10px; color: #24334b; background: #f1f5f9; font-weight: 850; font-size: 12px; }
+    .kb-text-btn:hover { color: #fff; background: var(--kb-blue); }
+    .kb-text-btn.danger:hover { background: var(--kb-danger); }
+    .kb-open-card { position: absolute; width: 1px; height: 1px; clip: rect(0 0 0 0); overflow: hidden; }
+
+    .kb-state { padding: 55px 24px; border: 1px dashed #c9d5e4; border-radius: var(--kb-radius); color: var(--kb-muted); background: rgba(255,255,255,.65); text-align: center; }
+    .kb-state strong { display: block; margin-bottom: 6px; color: var(--kb-ink); font-size: 19px; }
+
+    .kb-dialog { width: min(980px, calc(100vw - 28px)); max-height: calc(100vh - 28px); padding: 0; border: 0; border-radius: 28px; background: #fff; box-shadow: 0 28px 90px rgba(15,23,42,.28); overflow: hidden; }
+    .kb-dialog::backdrop { background: rgba(7,17,35,.76); backdrop-filter: blur(3px); }
+    .kb-dialog-form { max-height: calc(100vh - 28px); display: flex; flex-direction: column; }
+    .kb-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 28px 18px; border-bottom: 1px solid var(--kb-line); }
+    .kb-dialog-head h2 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
+    .kb-dialog-head p { margin: 5px 0 0; color: var(--kb-muted); font-size: 14px; }
+    .kb-icon-btn { width: 42px; height: 42px; border: 1px solid var(--kb-line); border-radius: 12px; color: #334155; background: #fff; display: inline-grid; place-items: center; flex: none; }
+    .kb-icon-btn:hover { color: #fff; border-color: var(--kb-blue); background: var(--kb-blue); }
+    .kb-dialog-body { min-height: 0; padding: 22px 28px 12px; overflow-y: auto; }
+    .kb-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(190px, 1fr); gap: 14px; margin-bottom: 18px; }
+    .kb-field label { display: block; margin: 0 0 7px; font-size: 13px; font-weight: 850; }
+    .kb-required { color: var(--kb-danger); }
+
+    .kb-editor-shell { border: 1px solid var(--kb-line); border-radius: 17px; background: #fff; overflow: hidden; }
+    .kb-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 9px; border-bottom: 1px solid var(--kb-line); background: #f8fafc; }
+    .kb-tool { min-width: 37px; height: 37px; padding: 0 10px; border: 1px solid transparent; border-radius: 9px; color: #26364f; background: transparent; font-size: 14px; font-weight: 800; display: inline-grid; place-items: center; }
+    .kb-tool:hover, .kb-tool[aria-pressed="true"] { color: #1649bd; border-color: #c9dafd; background: #eaf1ff; }
+    .kb-tool svg { width: 18px; height: 18px; }
+    .kb-tool-select { height: 37px; max-width: 150px; padding: 0 30px 0 10px; border: 1px solid var(--kb-line); border-radius: 9px; color: #26364f; background: #fff; font-size: 13px; font-weight: 750; }
+    .kb-separator { width: 1px; height: 25px; margin: 0 3px; background: #d5deea; }
+    .kb-editor { min-height: 310px; max-height: 48vh; padding: 22px; overflow-y: auto; outline: none; line-height: 1.65; }
+    .kb-editor:empty::before { color: #8a96a8; content: attr(data-placeholder); pointer-events: none; }
+    .kb-editor:focus { box-shadow: inset 0 0 0 3px rgba(47,103,237,.12); }
+    .kb-editor h2 { margin: 1.2em 0 .45em; font-size: 1.55em; }
+    .kb-editor h3 { margin: 1.1em 0 .4em; font-size: 1.25em; }
+    .kb-editor blockquote { margin: 1em 0; padding: 12px 16px; border-left: 4px solid var(--kb-blue); color: #334155; background: var(--kb-blue-soft); }
+    .kb-editor pre { padding: 15px; border-radius: 11px; color: #e5edf9; background: #111c31; white-space: pre-wrap; }
+    .kb-editor a { color: #1d58d8; text-decoration: underline; }
+    .kb-editor figure { margin: 18px 0; }
+    .kb-editor img { display: block; max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px rgba(15,23,42,.12); }
+    .kb-editor figcaption { margin-top: 7px; color: var(--kb-muted); font-size: 13px; font-style: italic; }
+    .kb-editor-meta { display: flex; justify-content: space-between; gap: 14px; padding: 9px 13px; border-top: 1px solid var(--kb-line); color: var(--kb-muted); background: #fbfdff; font-size: 12px; }
+    .kb-drop-active { outline: 3px dashed var(--kb-blue); outline-offset: -8px; background: #f5f8ff; }
+
+    .kb-dialog-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 28px 22px; border-top: 1px solid var(--kb-line); background: #fff; }
+    .kb-feedback { min-height: 20px; margin: 0; font-size: 13px; font-weight: 750; }
+    .kb-feedback.error { color: var(--kb-danger); }
+    .kb-feedback.success { color: var(--kb-success); }
+    .kb-actions { display: flex; gap: 10px; margin-left: auto; }
+    .kb-secondary { min-height: 48px; padding: 0 18px; border: 1px solid var(--kb-line); border-radius: 13px; color: #273750; background: #fff; font-weight: 850; }
+    .kb-secondary:hover { border-color: #9aacbf; background: #f8fafc; }
+
+    .kb-reader { width: min(900px, calc(100vw - 28px)); }
+    .kb-reader .kb-dialog-body { padding: 26px 34px 40px; }
+    .kb-reader-category { margin-bottom: 10px; }
+    .kb-reader-title { margin: 0; font-size: clamp(30px, 5vw, 48px); line-height: 1.04; letter-spacing: -.045em; }
+    .kb-reader-date { margin: 10px 0 0; color: var(--kb-muted); font-size: 13px; }
+    .kb-article { margin-top: 28px; color: #26354b; font-size: 16px; line-height: 1.75; overflow-wrap: anywhere; }
+    .kb-article h2 { margin: 1.5em 0 .45em; color: var(--kb-ink); font-size: 1.65em; line-height: 1.2; }
+    .kb-article h3 { margin: 1.35em 0 .4em; color: var(--kb-ink); font-size: 1.3em; }
+    .kb-article img { display: block; max-width: 100%; height: auto; margin: 20px auto; border-radius: 15px; box-shadow: 0 12px 35px rgba(15,23,42,.14); }
+    .kb-article figure { margin: 24px 0; }
+    .kb-article figcaption { margin-top: 8px; color: var(--kb-muted); font-size: 13px; font-style: italic; text-align: center; }
+    .kb-article blockquote { margin: 1.2em 0; padding: 14px 18px; border-left: 4px solid var(--kb-blue); background: var(--kb-blue-soft); }
+    .kb-article pre { padding: 17px; border-radius: 12px; color: #e5edf9; background: #111c31; white-space: pre-wrap; overflow-x: auto; }
+    .kb-article a { color: #1d58d8; text-decoration-thickness: 2px; text-underline-offset: 2px; }
+    .kb-article hr { margin: 30px 0; border: 0; border-top: 1px solid var(--kb-line); }
+
+    .kb-toast { position: fixed; z-index: 20; right: 24px; bottom: 24px; max-width: min(420px, calc(100vw - 48px)); padding: 14px 17px; border-radius: 13px; color: #fff; background: #16233a; box-shadow: var(--kb-shadow); font-size: 14px; font-weight: 750; transform: translateY(16px); opacity: 0; pointer-events: none; transition: .2s ease; }
+    .kb-toast.show { transform: translateY(0); opacity: 1; }
+    .kb-toast.error { background: var(--kb-danger); }
+
+    @media (max-width: 900px) {
+      .kb-app { grid-template-columns: 1fr; }
+      .kb-sidebar { position: relative; width: 100%; height: auto; padding: 18px; }
+      .kb-brand-small, .kb-brand { display: none; }
+      .kb-nav { display: flex; gap: 6px; overflow-x: auto; }
+      .kb-nav a { min-width: max-content; min-height: 42px; }
+      .kb-sidebar-spacer, .kb-logout { display: none; }
+      .kb-main { padding: 28px 18px 50px; }
+      .kb-header { align-items: flex-start; }
+      .kb-title { font-size: clamp(42px, 12vw, 68px); }
+    }
+    @media (max-width: 680px) {
+      .kb-header { display: grid; }
+      .kb-primary { width: 100%; }
+      .kb-controls, .kb-fields { grid-template-columns: 1fr; }
+      .kb-dialog-head, .kb-dialog-body, .kb-dialog-foot { padding-left: 18px; padding-right: 18px; }
+      .kb-dialog-foot { align-items: stretch; flex-direction: column; }
+      .kb-actions { width: 100%; margin: 0; }
+      .kb-actions > * { flex: 1; }
+      .kb-separator { display: none; }
+      .kb-toolbar { gap: 3px; }
+      .kb-tool { min-width: 35px; padding: 0 8px; }
+      .kb-editor { min-height: 270px; padding: 16px; }
+      .kb-card-footer { align-items: flex-start; flex-direction: column; }
+      .kb-card-actions { width: 100%; }
+      .kb-card-actions button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="kb-app">
+    <aside class="kb-sidebar" aria-label="Huvudmeny">
+      <p class="kb-brand-small">SUPPORT<br>MANAGEMENT</p>
+      <p class="kb-brand">EVENTFUL DESK<br>V2</p>
+      <nav class="kb-nav">
+        <a href="index.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-7"/></svg>Dashboard</a>
+        <a href="tickets.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v10H4z"/><path d="M4 10a2 2 0 0 0 0 4m16-4a2 2 0 0 1 0 4"/></svg>Ärenden</a>
+        <a href="customers.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V5h14v16"/><path d="M9 9h1m4 0h1m-6 4h1m4 0h1m-6 4h1m4 0h1"/></svg>Kunder</a>
+        <a href="agents.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6m0-5c3 0 5 1.5 5 5"/></svg>Agenter</a>
+        <a href="kb.html" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M8 4v16m3-12h5m-5 4h5"/></svg>Kunskapsbas</a>
+        <a href="reports.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg>Rapporter</a>
+      </nav>
+      <div class="kb-sidebar-spacer"></div>
+      <button class="kb-logout" id="logoutButton" type="button">Logga ut</button>
+    </aside>
+
+    <main class="kb-main">
+      <header class="kb-header">
+        <div>
+          <p class="kb-eyebrow">Supportbanken</p>
+          <h1 class="kb-title">Kunskapsbas</h1>
+          <p class="kb-subtitle">Samla instruktioner, guider och lösningar på ett ställe. Sök, filtrera och redigera artiklar direkt.</p>
+        </div>
+        <button class="kb-primary" id="newArticleButton" type="button">+ Ny artikel</button>
+      </header>
+
+      <section aria-label="Sök och filtrera">
+        <div class="kb-controls">
+          <div class="kb-search-wrap">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            <input class="kb-input" id="searchInput" type="search" placeholder="Sök i rubrik, kategori och innehåll…" autocomplete="off">
+          </div>
+          <select class="kb-select" id="categoryFilter" aria-label="Filtrera på kategori">
+            <option value="">Alla kategorier</option>
+          </select>
+        </div>
+        <p class="kb-result-meta" id="resultMeta" aria-live="polite"></p>
+      </section>
+
+      <section class="kb-grid" id="articleGrid" aria-label="Artiklar"></section>
+      <div class="kb-state" id="emptyState" hidden>
+        <strong>Inga artiklar hittades</strong>
+        <span>Prova att ändra sökningen eller skapa en ny artikel.</span>
+      </div>
+    </main>
+  </div>
+
+  <dialog class="kb-dialog" id="editorDialog" aria-labelledby="editorDialogTitle">
+    <form class="kb-dialog-form" id="articleForm" method="dialog">
+      <header class="kb-dialog-head">
+        <div>
+          <h2 id="editorDialogTitle">Ny artikel</h2>
+          <p>Formatera text, skapa länkar och infoga bilder direkt i innehållet.</p>
+        </div>
+        <button class="kb-icon-btn" id="closeEditorButton" type="button" aria-label="Stäng">✕</button>
+      </header>
+
+      <div class="kb-dialog-body">
+        <div class="kb-fields">
+          <div class="kb-field">
+            <label for="titleInput">Rubrik <span class="kb-required">*</span></label>
+            <input class="kb-input" id="titleInput" maxlength="140" required placeholder="Exempel: Återställ ett Microsoft 365-lösenord">
+          </div>
+          <div class="kb-field">
+            <label for="categoryInput">Kategori</label>
+            <input class="kb-input" id="categoryInput" maxlength="80" list="categorySuggestions" placeholder="Exempel: Microsoft 365">
+            <datalist id="categorySuggestions"></datalist>
+          </div>
+        </div>
+
+        <div class="kb-field">
+          <label id="contentLabel">Innehåll <span class="kb-required">*</span></label>
+          <div class="kb-editor-shell">
+            <div class="kb-toolbar" id="editorToolbar" role="toolbar" aria-label="Textformatering">
+              <select class="kb-tool-select" id="formatSelect" aria-label="Textformat" title="Textformat">
+                <option value="p">Brödtext</option>
+                <option value="h2">Rubrik</option>
+                <option value="h3">Underrubrik</option>
+                <option value="blockquote">Citat/ruta</option>
+                <option value="pre">Kodblock</option>
+              </select>
+              <span class="kb-separator" aria-hidden="true"></span>
+              <button class="kb-tool" type="button" data-command="bold" title="Fet (Ctrl+B)" aria-label="Fet"><strong>B</strong></button>
+              <button class="kb-tool" type="button" data-command="italic" title="Kursiv (Ctrl+I)" aria-label="Kursiv"><em>I</em></button>
+              <button class="kb-tool" type="button" data-command="underline" title="Understruken (Ctrl+U)" aria-label="Understruken"><u>U</u></button>
+              <button class="kb-tool" type="button" data-command="strikeThrough" title="Genomstruken" aria-label="Genomstruken"><s>S</s></button>
+              <span class="kb-separator" aria-hidden="true"></span>
+              <button class="kb-tool" type="button" data-command="insertUnorderedList" title="Punktlista" aria-label="Punktlista">• Lista</button>
+              <button class="kb-tool" type="button" data-command="insertOrderedList" title="Numrerad lista" aria-label="Numrerad lista">1. Lista</button>
+              <span class="kb-separator" aria-hidden="true"></span>
+              <button class="kb-tool" id="linkButton" type="button" title="Infoga länk" aria-label="Infoga länk">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>
+              </button>
+              <button class="kb-tool" id="imageButton" type="button" title="Infoga bild" aria-label="Infoga bild">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/></svg>
+              </button>
+              <button class="kb-tool" type="button" data-command="insertHorizontalRule" title="Avdelare" aria-label="Infoga avdelare">—</button>
+              <span class="kb-separator" aria-hidden="true"></span>
+              <button class="kb-tool" type="button" data-command="undo" title="Ångra (Ctrl+Z)" aria-label="Ångra">↶</button>
+              <button class="kb-tool" type="button" data-command="redo" title="Gör om (Ctrl+Y)" aria-label="Gör om">↷</button>
+              <button class="kb-tool" type="button" data-command="removeFormat" title="Rensa formatering" aria-label="Rensa formatering">Tx</button>
+            </div>
+            <div class="kb-editor" id="contentEditor" contenteditable="true" role="textbox" aria-labelledby="contentLabel" aria-multiline="true" data-placeholder="Skriv instruktionen här. Du kan även dra in eller klistra in en bild…"></div>
+            <div class="kb-editor-meta">
+              <span id="saveState">Inte sparad</span>
+              <span id="contentCount">0 ord · 0 tecken</span>
+            </div>
+          </div>
+          <input id="imageInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+        </div>
+      </div>
+
+      <footer class="kb-dialog-foot">
+        <p class="kb-feedback" id="editorFeedback" aria-live="polite"></p>
+        <div class="kb-actions">
+          <button class="kb-secondary" id="cancelEditorButton" type="button">Stäng</button>
+          <button class="kb-primary" id="saveArticleButton" type="submit">Spara artikel</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="kb-dialog kb-reader" id="readerDialog" aria-labelledby="readerTitle">
+    <div class="kb-dialog-form">
+      <header class="kb-dialog-head">
+        <div>
+          <span class="kb-chip kb-reader-category" id="readerCategory"></span>
+          <h2 class="kb-reader-title" id="readerTitle"></h2>
+          <p class="kb-reader-date" id="readerDate"></p>
+        </div>
+        <button class="kb-icon-btn" id="closeReaderButton" type="button" aria-label="Stäng">✕</button>
+      </header>
+      <div class="kb-dialog-body">
+        <article class="kb-article" id="readerContent"></article>
+      </div>
+      <footer class="kb-dialog-foot">
+        <div></div>
+        <div class="kb-actions">
+          <button class="kb-secondary" id="editFromReaderButton" type="button">Redigera</button>
+          <button class="kb-primary" id="readerDoneButton" type="button">Klar</button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="kb-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import * as apiClient from "./js/api.js";
+    import * as authClient from "./js/auth.js";
+
+    const els = {
+      articleGrid: document.getElementById("articleGrid"),
+      emptyState: document.getElementById("emptyState"),
+      resultMeta: document.getElementById("resultMeta"),
+      searchInput: document.getElementById("searchInput"),
+      categoryFilter: document.getElementById("categoryFilter"),
+      categorySuggestions: document.getElementById("categorySuggestions"),
+      newArticleButton: document.getElementById("newArticleButton"),
+      logoutButton: document.getElementById("logoutButton"),
+      editorDialog: document.getElementById("editorDialog"),
+      articleForm: document.getElementById("articleForm"),
+      editorDialogTitle: document.getElementById("editorDialogTitle"),
+      closeEditorButton: document.getElementById("closeEditorButton"),
+      cancelEditorButton: document.getElementById("cancelEditorButton"),
+      saveArticleButton: document.getElementById("saveArticleButton"),
+      titleInput: document.getElementById("titleInput"),
+      categoryInput: document.getElementById("categoryInput"),
+      contentEditor: document.getElementById("contentEditor"),
+      contentCount: document.getElementById("contentCount"),
+      saveState: document.getElementById("saveState"),
+      editorFeedback: document.getElementById("editorFeedback"),
+      editorToolbar: document.getElementById("editorToolbar"),
+      formatSelect: document.getElementById("formatSelect"),
+      linkButton: document.getElementById("linkButton"),
+      imageButton: document.getElementById("imageButton"),
+      imageInput: document.getElementById("imageInput"),
+      readerDialog: document.getElementById("readerDialog"),
+      readerCategory: document.getElementById("readerCategory"),
+      readerTitle: document.getElementById("readerTitle"),
+      readerDate: document.getElementById("readerDate"),
+      readerContent: document.getElementById("readerContent"),
+      closeReaderButton: document.getElementById("closeReaderButton"),
+      readerDoneButton: document.getElementById("readerDoneButton"),
+      editFromReaderButton: document.getElementById("editFromReaderButton"),
+      toast: document.getElementById("toast")
+    };
+
+    const state = {
+      articles: [],
+      editingId: null,
+      readingId: null,
+      dirty: false,
+      savedRange: null,
+      busy: false
+    };
+
+    const allowedTags = new Set([
+      "P", "BR", "H2", "H3", "STRONG", "B", "EM", "I", "U", "S",
+      "UL", "OL", "LI", "A", "IMG", "BLOCKQUOTE", "PRE", "CODE", "HR",
+      "FIGURE", "FIGCAPTION", "DIV", "SPAN"
+    ]);
+
+    function asArray(value) {
+      if (Array.isArray(value)) return value;
+      if (Array.isArray(value?.items)) return value.items;
+      if (Array.isArray(value?.articles)) return value.articles;
+      return [];
+    }
+
+    async function request(method, path, body) {
+      const named = {
+        GET: apiClient.get,
+        POST: apiClient.post,
+        PUT: apiClient.put,
+        DELETE: apiClient.del || apiClient.remove || apiClient.delete
+      }[method];
+
+      if (typeof named === "function") {
+        return method === "GET" ? named(path) : named(path, body);
+      }
+
+      if (typeof apiClient.api === "function") {
+        const options = { method };
+        if (body !== undefined) {
+          options.headers = { "Content-Type": "application/json" };
+          options.body = JSON.stringify(body);
+        }
+        return apiClient.api(path, options);
+      }
+
+      throw new Error("API-klienten saknar stöd för " + method + ".");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+      })[char]);
+    }
+
+    function safeUrl(value, image = false) {
+      const url = String(value || "").trim();
+      if (image && /^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(url)) return url;
+      try {
+        const parsed = new URL(url, location.href);
+        if (["http:", "https:"].includes(parsed.protocol)) return parsed.href;
+        if (!image && ["mailto:", "tel:"].includes(parsed.protocol)) return parsed.href;
+      } catch (_) {}
+      return "";
+    }
+
+    function sanitizeHtml(input) {
+      const template = document.createElement("template");
+      template.innerHTML = String(input || "");
+
+      // Keep only the formatting, link and image attributes that the editor supports.
+      function cleanWithAttributes(parent) {
+        for (const node of [...parent.childNodes]) {
+          if (node.nodeType === Node.COMMENT_NODE) { node.remove(); continue; }
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
+          if (!allowedTags.has(node.tagName)) {
+            cleanWithAttributes(node);
+            node.replaceWith(...node.childNodes);
+            continue;
+          }
+          const href = node.tagName === "A" ? node.getAttribute("href") : "";
+          const src = node.tagName === "IMG" ? node.getAttribute("src") : "";
+          const alt = node.tagName === "IMG" ? node.getAttribute("alt") : "";
+          for (const attribute of [...node.attributes]) node.removeAttribute(attribute.name);
+          if (node.tagName === "A") {
+            const validHref = safeUrl(href, false);
+            if (!validHref) {
+              cleanWithAttributes(node);
+              node.replaceWith(...node.childNodes);
+              continue;
+            }
+            node.setAttribute("href", validHref);
+            node.setAttribute("target", "_blank");
+            node.setAttribute("rel", "noopener noreferrer");
+          }
+          if (node.tagName === "IMG") {
+            const validSrc = safeUrl(src, true);
+            if (!validSrc) { node.remove(); continue; }
+            node.setAttribute("src", validSrc);
+            node.setAttribute("alt", String(alt || "").slice(0, 180));
+            node.setAttribute("loading", "lazy");
+          }
+          cleanWithAttributes(node);
+        }
+      }
+
+      cleanWithAttributes(template.content);
+      return template.innerHTML.trim();
+    }
+
+    function contentAsHtml(article) {
+      const raw = String(article?.content || "");
+      if (!raw.trim()) return "";
+      if (/<\/?[a-z][\s\S]*>/i.test(raw)) return sanitizeHtml(raw);
+      return raw.split(/\n{2,}/).map(part => `<p>${escapeHtml(part).replace(/\n/g, "<br>")}</p>`).join("");
+    }
+
+    function textFromHtml(html) {
+      const holder = document.createElement("div");
+      holder.innerHTML = sanitizeHtml(html);
+      return (holder.textContent || "").replace(/\s+/g, " ").trim();
+    }
+
+    function articleId(article) {
+      return String(article?.id ?? article?._id ?? "");
+    }
+
+    function articleDate(article) {
+      return article?.updatedAt || article?.createdAt || article?.date || "";
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(date);
+    }
+
+    function normalized(value) {
+      return String(value || "").toLocaleLowerCase("sv-SE").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function currentFilteredArticles() {
+      const query = normalized(els.searchInput.value.trim());
+      const category = els.categoryFilter.value;
+      return state.articles
+        .filter(article => !category || String(article.category || "") === category)
+        .filter(article => {
+          if (!query) return true;
+          const haystack = normalized([article.title, article.category, textFromHtml(contentAsHtml(article))].join(" "));
+          return haystack.includes(query);
+        })
+        .sort((a, b) => {
+          const dates = new Date(articleDate(b)).getTime() - new Date(articleDate(a)).getTime();
+          return Number.isNaN(dates) || dates === 0
+            ? String(a.title || "").localeCompare(String(b.title || ""), "sv")
+            : dates;
+        });
+    }
+
+    function updateCategories() {
+      const selected = els.categoryFilter.value;
+      const categories = [...new Set(state.articles.map(item => String(item.category || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "sv"));
+      els.categoryFilter.innerHTML = `<option value="">Alla kategorier</option>` + categories
+        .map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+      if (categories.includes(selected)) els.categoryFilter.value = selected;
+      els.categorySuggestions.innerHTML = categories.map(value => `<option value="${escapeHtml(value)}"></option>`).join("");
+    }
+
+    function renderArticles() {
+      const articles = currentFilteredArticles();
+      els.articleGrid.innerHTML = articles.map(article => {
+        const id = articleId(article);
+        const category = String(article.category || "Okategoriserad");
+        const excerpt = textFromHtml(contentAsHtml(article)).slice(0, 320) || "Artikeln saknar innehåll.";
+        return `
+          <article class="kb-card" data-id="${escapeHtml(id)}">
+            <div class="kb-card-top"><span class="kb-chip">${escapeHtml(category)}</span></div>
+            <h2>${escapeHtml(article.title || "Namnlös artikel")}</h2>
+            <p class="kb-excerpt">${escapeHtml(excerpt)}</p>
+            <div class="kb-card-footer">
+              <span class="kb-date">${escapeHtml(formatDate(articleDate(article)))}</span>
+              <div class="kb-card-actions">
+                <button class="kb-text-btn" type="button" data-action="open">Öppna</button>
+                <button class="kb-text-btn" type="button" data-action="edit">Redigera</button>
+                <button class="kb-text-btn danger" type="button" data-action="delete">Ta bort</button>
+              </div>
+            </div>
+          </article>`;
+      }).join("");
+
+      els.emptyState.hidden = articles.length > 0;
+      const total = state.articles.length;
+      els.resultMeta.textContent = total === 0
+        ? "Inga artiklar ännu."
+        : `${articles.length} av ${total} ${total === 1 ? "artikel" : "artiklar"}`;
+    }
+
+    function renderAll() {
+      updateCategories();
+      renderArticles();
+    }
+
+    function setLoadingState() {
+      els.articleGrid.innerHTML = `<div class="kb-state"><strong>Hämtar supportbanken…</strong><span>Artiklarna laddas från datalagret.</span></div>`;
+      els.resultMeta.textContent = "";
+      els.emptyState.hidden = true;
+    }
+
+    async function loadArticles() {
+      setLoadingState();
+      try {
+        state.articles = asArray(await request("GET", "/api/kb"));
+        renderAll();
+      } catch (error) {
+        state.articles = [];
+        els.articleGrid.innerHTML = `<div class="kb-state"><strong>Kunde inte hämta artiklar</strong><span>${escapeHtml(error?.message || "Ett oväntat fel uppstod.")}</span></div>`;
+        handleUnauthorized(error);
+      }
+    }
+
+    function showToast(message, type = "") {
+      els.toast.textContent = message;
+      els.toast.className = `kb-toast ${type}`.trim();
+      requestAnimationFrame(() => els.toast.classList.add("show"));
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 3300);
+    }
+
+    function setFeedback(message = "", type = "") {
+      els.editorFeedback.textContent = message;
+      els.editorFeedback.className = `kb-feedback ${type}`.trim();
+    }
+
+    function setDirty(dirty = true) {
+      state.dirty = dirty;
+      els.saveState.textContent = dirty ? "Ändringar inte sparade" : "Sparad";
+    }
+
+    function updateCount() {
+      const text = (els.contentEditor.textContent || "").trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      els.contentCount.textContent = `${words} ${words === 1 ? "ord" : "ord"} · ${text.length} tecken`;
+    }
+
+    function openEditor(article = null) {
+      state.editingId = article ? articleId(article) : null;
+      state.dirty = false;
+      state.savedRange = null;
+      els.articleForm.reset();
+      els.titleInput.value = article?.title || "";
+      els.categoryInput.value = article?.category || "";
+      els.contentEditor.innerHTML = article ? contentAsHtml(article) : "";
+      els.editorDialogTitle.textContent = article ? "Redigera artikel" : "Ny artikel";
+      els.saveState.textContent = article ? "Sparad" : "Inte sparad";
+      setFeedback();
+      updateCount();
+      els.editorDialog.showModal();
+      setTimeout(() => els.titleInput.focus(), 40);
+    }
+
+    function requestCloseEditor() {
+      if (state.dirty && !window.confirm("Du har osparade ändringar. Vill du stänga ändå?")) return;
+      state.dirty = false;
+      els.editorDialog.close();
+    }
+
+    function openReader(article) {
+      state.readingId = articleId(article);
+      els.readerCategory.textContent = article.category || "Okategoriserad";
+      els.readerTitle.textContent = article.title || "Namnlös artikel";
+      els.readerDate.textContent = formatDate(articleDate(article)) ? `Senast ändrad ${formatDate(articleDate(article))}` : "";
+      els.readerContent.innerHTML = contentAsHtml(article);
+      els.readerDialog.showModal();
+    }
+
+    function findArticle(id) {
+      return state.articles.find(item => articleId(item) === String(id));
+    }
+
+    function saveSelection() {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      if (els.contentEditor.contains(range.commonAncestorContainer)) state.savedRange = range.cloneRange();
+    }
+
+    function restoreSelection() {
+      els.contentEditor.focus();
+      if (!state.savedRange) return;
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(state.savedRange);
+    }
+
+    function exec(command, value = null) {
+      restoreSelection();
+      document.execCommand(command, false, value);
+      saveSelection();
+      setDirty(true);
+      updateCount();
+    }
+
+    function normalizeLink(value) {
+      let url = String(value || "").trim();
+      if (!url) return "";
+      if (/^[\w.+-]+@[\w.-]+\.[a-z]{2,}$/i.test(url)) url = `mailto:${url}`;
+      else if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = `https://${url}`;
+      return safeUrl(url, false);
+    }
+
+    function insertLink() {
+      saveSelection();
+      const selection = window.getSelection();
+      const selectedText = selection?.toString().trim() || "";
+      const entered = window.prompt("Länkadress (https://… eller e-postadress):", "https://");
+      if (entered === null) return;
+      const href = normalizeLink(entered);
+      if (!href) {
+        setFeedback("Länken måste börja med http://, https://, mailto: eller vara en e-postadress.", "error");
+        return;
+      }
+      restoreSelection();
+      if (selectedText) {
+        document.execCommand("createLink", false, href);
+        const anchor = window.getSelection()?.anchorNode?.parentElement?.closest?.("a");
+        if (anchor) { anchor.target = "_blank"; anchor.rel = "noopener noreferrer"; }
+      } else {
+        const label = window.prompt("Text som ska visas:", href) || href;
+        document.execCommand("insertHTML", false, `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
+      }
+      saveSelection();
+      setDirty(true);
+      updateCount();
+    }
+
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Bilden kunde inte läsas."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function loadImage(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Bilden kunde inte öppnas."));
+        image.src = dataUrl;
+      });
+    }
+
+    async function prepareImage(file) {
+      if (!file?.type?.startsWith("image/")) throw new Error("Välj en PNG-, JPG-, GIF- eller WebP-bild.");
+      if (file.size > 12 * 1024 * 1024) throw new Error("Originalbilden får vara högst 12 MB.");
+
+      const source = await readFile(file);
+      if (file.type === "image/gif") {
+        if (file.size > 1.5 * 1024 * 1024) throw new Error("Animerade GIF-bilder får vara högst 1,5 MB.");
+        return source;
+      }
+
+      const image = await loadImage(source);
+      const maxSide = 1600;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+      if (scale === 1 && file.size <= 650 * 1024) return source;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d", { alpha: true });
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const output = canvas.toDataURL("image/webp", .82);
+      if (output.length > 2.1 * 1024 * 1024) throw new Error("Bilden är fortfarande för stor efter komprimering. Välj en mindre bild.");
+      return output;
+    }
+
+    async function insertImage(file) {
+      try {
+        setFeedback("Bilden bearbetas…");
+        const dataUrl = await prepareImage(file);
+        const alt = window.prompt("Alternativtext för bilden (beskriv kort vad den visar):", file.name.replace(/\.[^.]+$/, "")) || "";
+        restoreSelection();
+        const html = `<figure><img src="${dataUrl}" alt="${escapeHtml(alt)}"><figcaption>Skriv en bildtext här (valfritt)</figcaption></figure><p><br></p>`;
+        document.execCommand("insertHTML", false, html);
+        setFeedback("Bilden har infogats.", "success");
+        setDirty(true);
+        updateCount();
+        saveSelection();
+      } catch (error) {
+        setFeedback(error?.message || "Bilden kunde inte infogas.", "error");
+      } finally {
+        els.imageInput.value = "";
+      }
+    }
+
+    async function saveArticle(event) {
+      event.preventDefault();
+      if (state.busy) return;
+
+      const title = els.titleInput.value.trim();
+      const category = els.categoryInput.value.trim() || "Okategoriserad";
+      const content = sanitizeHtml(els.contentEditor.innerHTML);
+      const hasContent = textFromHtml(content).length > 0 || /<img\b/i.test(content);
+
+      if (!title) {
+        setFeedback("Skriv en rubrik.", "error");
+        els.titleInput.focus();
+        return;
+      }
+      if (!hasContent) {
+        setFeedback("Skriv innehåll eller infoga en bild.", "error");
+        els.contentEditor.focus();
+        return;
+      }
+
+      const previous = state.editingId ? findArticle(state.editingId) : null;
+      const now = new Date().toISOString();
+      const payload = {
+        ...(previous || {}),
+        title,
+        category,
+        content,
+        contentFormat: "html",
+        updatedAt: now
+      };
+      if (!previous) payload.createdAt = now;
+
+      state.busy = true;
+      els.saveArticleButton.disabled = true;
+      els.saveArticleButton.textContent = "Sparar…";
+      setFeedback("Sparar artikeln…");
+
+      try {
+        const path = previous ? `/api/kb/${encodeURIComponent(state.editingId)}` : "/api/kb";
+        const saved = await request(previous ? "PUT" : "POST", path, payload);
+        const merged = { ...payload, ...(saved && typeof saved === "object" ? saved : {}) };
+        if (previous) {
+          const index = state.articles.findIndex(item => articleId(item) === state.editingId);
+          state.articles[index] = merged;
+        } else {
+          state.articles.unshift(merged);
+        }
+        state.dirty = false;
+        els.editorDialog.close();
+        renderAll();
+        showToast(previous ? "Artikeln har uppdaterats." : "Artikeln har skapats.");
+      } catch (error) {
+        setFeedback(error?.message || "Artikeln kunde inte sparas.", "error");
+        handleUnauthorized(error);
+      } finally {
+        state.busy = false;
+        els.saveArticleButton.disabled = false;
+        els.saveArticleButton.textContent = "Spara artikel";
+      }
+    }
+
+    async function deleteArticle(article) {
+      const id = articleId(article);
+      if (!id) {
+        showToast("Artikeln saknar ID och kan inte tas bort.", "error");
+        return;
+      }
+      if (!window.confirm(`Ta bort artikeln ”${article.title || "Namnlös artikel"}”?\n\nDetta går inte att ångra.`)) return;
+      try {
+        await request("DELETE", `/api/kb/${encodeURIComponent(id)}`);
+        state.articles = state.articles.filter(item => articleId(item) !== id);
+        renderAll();
+        showToast("Artikeln har tagits bort.");
+      } catch (error) {
+        showToast(error?.message || "Artikeln kunde inte tas bort.", "error");
+        handleUnauthorized(error);
+      }
+    }
+
+    function handleUnauthorized(error) {
+      const message = String(error?.message || "");
+      if (/\b401\b|obehörig|unauthorized/i.test(message)) {
+        setTimeout(() => { location.href = "login.html"; }, 800);
+      }
+    }
+
+    async function logout() {
+      if (!window.confirm("Vill du logga ut?")) return;
+      try {
+        if (typeof authClient.logout === "function") await authClient.logout();
+        else {
+          for (const key of ["token", "user", "ed_token", "ed_user", "eventful_token", "eventful_user"]) {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+          }
+        }
+      } finally {
+        location.href = "login.html";
+      }
+    }
+
+    els.newArticleButton.addEventListener("click", () => openEditor());
+    els.closeEditorButton.addEventListener("click", requestCloseEditor);
+    els.cancelEditorButton.addEventListener("click", requestCloseEditor);
+    els.articleForm.addEventListener("submit", saveArticle);
+    els.logoutButton.addEventListener("click", logout);
+    els.searchInput.addEventListener("input", renderArticles);
+    els.categoryFilter.addEventListener("change", renderArticles);
+
+    els.articleGrid.addEventListener("click", event => {
+      const actionButton = event.target.closest("button[data-action]");
+      if (!actionButton) return;
+      const card = actionButton.closest("[data-id]");
+      const article = findArticle(card?.dataset.id);
+      if (!article) return;
+      if (actionButton.dataset.action === "open") openReader(article);
+      if (actionButton.dataset.action === "edit") openEditor(article);
+      if (actionButton.dataset.action === "delete") deleteArticle(article);
+    });
+
+    for (const input of [els.titleInput, els.categoryInput]) {
+      input.addEventListener("input", () => setDirty(true));
+    }
+    els.contentEditor.addEventListener("input", () => { setDirty(true); updateCount(); saveSelection(); });
+    els.contentEditor.addEventListener("keyup", saveSelection);
+    els.contentEditor.addEventListener("mouseup", saveSelection);
+    els.contentEditor.addEventListener("focus", saveSelection);
+    els.contentEditor.addEventListener("paste", async event => {
+      const image = [...(event.clipboardData?.items || [])].find(item => item.type.startsWith("image/"));
+      if (!image) return;
+      event.preventDefault();
+      await insertImage(image.getAsFile());
+    });
+    els.contentEditor.addEventListener("dragover", event => { event.preventDefault(); els.contentEditor.classList.add("kb-drop-active"); });
+    els.contentEditor.addEventListener("dragleave", () => els.contentEditor.classList.remove("kb-drop-active"));
+    els.contentEditor.addEventListener("drop", async event => {
+      event.preventDefault();
+      els.contentEditor.classList.remove("kb-drop-active");
+      const image = [...(event.dataTransfer?.files || [])].find(file => file.type.startsWith("image/"));
+      if (image) await insertImage(image);
+    });
+
+    els.editorToolbar.addEventListener("mousedown", event => {
+      if (event.target.closest("button")) event.preventDefault();
+    });
+    els.editorToolbar.addEventListener("click", event => {
+      const button = event.target.closest("button[data-command]");
+      if (button) exec(button.dataset.command);
+    });
+    els.formatSelect.addEventListener("change", () => {
+      exec("formatBlock", `<${els.formatSelect.value}>`);
+      els.formatSelect.value = "p";
+    });
+    els.linkButton.addEventListener("click", insertLink);
+    els.imageButton.addEventListener("click", () => { saveSelection(); els.imageInput.click(); });
+    els.imageInput.addEventListener("change", () => insertImage(els.imageInput.files?.[0]));
+
+    els.closeReaderButton.addEventListener("click", () => els.readerDialog.close());
+    els.readerDoneButton.addEventListener("click", () => els.readerDialog.close());
+    els.editFromReaderButton.addEventListener("click", () => {
+      const article = findArticle(state.readingId);
+      els.readerDialog.close();
+      if (article) openEditor(article);
+    });
+
+    els.editorDialog.addEventListener("cancel", event => { event.preventDefault(); requestCloseEditor(); });
+    els.readerDialog.addEventListener("cancel", event => { event.preventDefault(); els.readerDialog.close(); });
+    window.addEventListener("beforeunload", event => {
+      if (!state.dirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "/" && !els.editorDialog.open && !els.readerDialog.open && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) {
+        event.preventDefault();
+        els.searchInput.focus();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s" && els.editorDialog.open) {
+        event.preventDefault();
+        els.articleForm.requestSubmit();
+      }
+    });
+
+    loadArticles();
+  </script>
+</body>
+</html>
