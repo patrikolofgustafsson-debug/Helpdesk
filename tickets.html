@@ -1,1 +1,147 @@
-<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ärenden - Eventful Desk</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"></head><body><main class="page"><div class="toolbar"><div style="flex:1"><p class="eyebrow">Support management</p><h1 class="title">Ärenden</h1></div><button id="newBtn" class="btn btn-primary">Nytt ärende</button></div><div class="toolbar"><input id="search" class="input" placeholder="Sök..." style="max-width:430px"><select id="filter" class="input" style="max-width:220px"><option value="">Alla statusar</option><option>Open</option><option>Pending</option><option>Resolved</option></select></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>Ämne</th><th>Kund</th><th>Agent</th><th>Status</th><th>Uppdaterad</th></tr></thead><tbody id="rows"></tbody></table></div></main><div id="modal" class="modal"><div class="modal-box stack"><h2>Nytt ärende</h2><select id="customerId" class="input"></select><input id="subject" class="input" placeholder="Ämne"><textarea id="description" class="input" rows="7" placeholder="Beskrivning"></textarea><select id="service" class="input"><option>Microsoft 365</option><option>FlowSync</option><option>SchoolSoft</option><option>Övrigt</option></select><button id="create" class="btn btn-primary">Skapa</button><button id="close" class="btn btn-light">Stäng</button><div id="message" class="status"></div></div></div><script type="module">import{mount}from'./js/layout.js';import{requireRole}from'./js/auth.js';import{get,post}from'./js/api.js';import{esc,date,msg}from'./js/util.js';await requireRole(['admin','agent']);mount('tickets.html');let data=[];async function load(){data=await get('/api/tickets');render()}function render(){const q=search.value.toLowerCase(),f=filter.value;rows.innerHTML=data.filter(x=>(!f||x.status===f)&&(!q||JSON.stringify(x).toLowerCase().includes(q))).map(x=>`<tr style="cursor:pointer" onclick="location.href='ticket.html?id=${encodeURIComponent(x.id)}'"><td><b>#${x.id}</b></td><td>${esc(x.subject)}</td><td>${esc(x.customerName)}</td><td>${esc(x.assignedAgentName||'Otilldelat')}</td><td><span class="pill ${x.status?.toLowerCase()}">${esc(x.status)}</span></td><td>${date(x.updatedAt)}</td></tr>`).join('')}async function customers(){const c=await get('/api/customers');customerId.innerHTML=c.map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc(x.company||'')}</option>`).join('')}newBtn.onclick=async()=>{await customers();modal.classList.add('open')};close.onclick=()=>modal.classList.remove('open');search.oninput=filter.onchange=render;create.onclick=async()=>{try{const t=await post('/api/tickets',{customerId:customerId.value,subject:subject.value,description:description.value,service:service.value});location.href='ticket.html?id='+t.id}catch(e){msg(e.message,true)}};await load();</script></body></html>
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ärenden · Eventful Desk</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    :root{--nav:#0d172b;--nav2:#1d2a40;--blue:#2d67ee;--blue2:#eaf1ff;--ink:#0d162b;--muted:#64748b;--line:#dce5f1;--page:#f5f7fb;--white:#fff;--danger:#b91c1c;--shadow:0 14px 38px rgba(15,23,42,.08)}
+    *{box-sizing:border-box} body{margin:0;background:var(--page);color:var(--ink);font:16px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    button,input,select{font:inherit} button,a{touch-action:manipulation}.skip-link{position:absolute;left:-9999px}.skip-link:focus{left:16px;top:16px;z-index:100;background:#fff;padding:12px;border-radius:8px}
+    .app{min-height:100vh;display:grid;grid-template-columns:272px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;background:var(--nav);color:#fff;padding:28px 20px;display:flex;flex-direction:column}.eyebrow{margin:0;color:#69a4ff;font-weight:900;letter-spacing:.22em;font-size:13px}.brand{margin:8px 0 34px;font-size:26px;line-height:1.15;font-weight:950;font-style:italic}.nav{display:grid;gap:7px}.nav a{color:#9fb2cd;text-decoration:none;padding:13px 15px;border-radius:14px;font-weight:850}.nav a:hover,.nav a:focus-visible{background:var(--nav2);color:#fff}.nav a.active{background:var(--blue);color:#fff}.nav-section{margin:22px 14px 7px;color:#6f87a8;font-size:11px;font-weight:900;letter-spacing:.16em}.logout{margin-top:auto;border:0;background:var(--nav2);color:#dce7f8;padding:14px;border-radius:14px;font-weight:850;cursor:pointer}.main{min-width:0;padding:40px clamp(20px,4vw,60px) 64px}.topbar{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:28px}.topbar h1{margin:0;font-size:clamp(40px,5vw,68px);line-height:.95;font-weight:950;font-style:italic;letter-spacing:-.045em}.summary{color:var(--muted);font-weight:750;margin:8px 0 0}.refresh{border:1px solid var(--line);background:#fff;border-radius:13px;padding:11px 16px;font-weight:850;cursor:pointer}.refresh:hover{border-color:#9bb8ff;color:#174ec8}
+    .filter-panel{background:#fff;border:1px solid #e7edf5;border-radius:26px;padding:24px;box-shadow:var(--shadow);margin-bottom:24px}.search-wrap{position:relative}.search-wrap svg{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:#718096}.search{width:100%;border:2px solid var(--line);border-radius:16px;padding:15px 46px;font-size:18px;outline:none}.search:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(45,103,238,.12)}.clear-search{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;padding:8px;border-radius:8px;cursor:pointer;display:none}.clear-search.show{display:block}.filters{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:14px;margin-top:16px}.field label{display:block;margin:0 0 6px;font-size:12px;color:#52647d;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.field select,.field input{width:100%;height:45px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 12px;color:var(--ink);outline:none}.field select:focus,.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(45,103,238,.11)}.filter-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;flex-wrap:wrap}.chips{display:flex;gap:8px;flex-wrap:wrap;min-height:31px}.chip{display:inline-flex;align-items:center;gap:7px;border:0;background:var(--blue2);color:#194dbd;border-radius:999px;padding:6px 10px;font-size:13px;font-weight:800;cursor:pointer}.reset{border:0;background:transparent;color:#38506f;font-weight:850;text-decoration:underline;cursor:pointer}.result-meta{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 4px 12px}.result-meta strong{font-size:18px}.sort-mobile{display:none}
+    .table-card{background:#fff;border:1px solid #e7edf5;border-radius:24px;overflow:hidden;box-shadow:var(--shadow)}.table-scroll{overflow:auto}.tickets-table{width:100%;border-collapse:collapse;min-width:1010px}.tickets-table th{background:#f8fafc;color:#53647b;text-align:left;padding:14px 16px;font-size:12px;letter-spacing:.055em;text-transform:uppercase;border-bottom:1px solid var(--line);white-space:nowrap}.tickets-table th button{border:0;background:transparent;padding:0;color:inherit;font:inherit;font-weight:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer}.tickets-table td{padding:16px;border-bottom:1px solid #edf2f7;vertical-align:middle}.tickets-table tbody tr{cursor:pointer}.tickets-table tbody tr:hover{background:#f8fbff}.tickets-table tbody tr:focus-within{outline:3px solid rgba(45,103,238,.22);outline-offset:-3px}.ticket-link{display:block;color:var(--ink);font-weight:900;text-decoration:none}.ticket-link small{display:block;color:var(--muted);font-weight:650;margin-top:3px;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.id{font-variant-numeric:tabular-nums;color:#4b5f7a;font-weight:800}.subtle{color:var(--muted)}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;white-space:nowrap}.status-open{background:#e6f7ee;color:#137a42}.status-progress{background:#e8efff;color:#2457bd}.status-waiting{background:#fff5d9;color:#986b00}.status-closed{background:#edf0f5;color:#516075}.priority-urgent{background:#fee8e8;color:#b42318}.priority-high{background:#fff0e3;color:#b54708}.priority-normal{background:#eef2ff;color:#4156b5}.priority-low{background:#eef7f3;color:#32735a}.empty,.loading,.error{padding:54px 24px;text-align:center}.loading-spinner{width:34px;height:34px;border:4px solid #dbe7ff;border-top-color:var(--blue);border-radius:50%;margin:0 auto 14px;animation:spin .8s linear infinite}.error{color:var(--danger)}.empty h2{margin:0 0 6px}.cards{display:none}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}@keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:1180px){.filters{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:820px){.app{display:block}.sidebar{position:static;height:auto;padding:16px 18px}.brand{margin-bottom:12px}.nav{display:flex;overflow:auto;padding-bottom:4px}.nav a{white-space:nowrap}.nav-section{display:none}.logout{margin-top:12px;width:100%}.main{padding:28px 16px 48px}.topbar{align-items:start}.topbar h1{font-size:44px}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.table-card{display:none}.cards{display:grid;gap:12px}.ticket-card{display:block;background:#fff;border:1px solid #e5ebf3;border-radius:18px;padding:17px;color:var(--ink);text-decoration:none;box-shadow:0 8px 22px rgba(15,23,42,.06)}.ticket-card-top,.ticket-card-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}.ticket-card h2{font-size:18px;margin:12px 0 5px}.ticket-card p{margin:0;color:var(--muted)}.ticket-card-meta{margin-top:14px;align-items:end}.sort-mobile{display:block}.desktop-sort{display:none}}
+    @media(max-width:520px){.filters{grid-template-columns:1fr}.filter-panel{padding:18px;border-radius:20px}.refresh{padding:9px 12px}.result-meta{align-items:end}.topbar{display:block}.topbar .refresh{margin-top:16px}.topbar h1{font-size:39px}}
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#content">Hoppa till innehåll</a>
+<div class="app">
+  <aside class="sidebar" aria-label="Huvudmeny">
+    <p class="eyebrow">SUPPORT MANAGEMENT</p><div class="brand">EVENTFUL DESK<br>V2</div>
+    <nav class="nav">
+      <a href="index.html">⌁ &nbsp;DASHBOARD</a><a class="active" aria-current="page" href="tickets.html">▣ &nbsp;ÄRENDEN</a><a href="customers.html">▦ &nbsp;KUNDER</a><a href="agents.html">♟ &nbsp;AGENTER</a><a href="kb.html">▤ &nbsp;KUNSKAPSBAS</a><a href="reports.html">▥ &nbsp;RAPPORTER</a>
+      <div class="nav-section">ADMINISTRATION</div><a href="categories.html">⌘ &nbsp;KLASSIFICERING</a><a href="settings.html">⚙ &nbsp;INSTÄLLNINGAR</a>
+    </nav>
+    <button class="logout" id="logoutButton" type="button">Logga ut</button>
+  </aside>
+  <main class="main" id="content">
+    <div class="topbar"><div><h1>ÄRENDEN</h1><p class="summary" id="summary">Hämtar ärenden…</p></div><button class="refresh" id="refreshButton" type="button">↻ Uppdatera</button></div>
+    <section class="filter-panel" aria-labelledby="filterHeading">
+      <h2 class="sr-only" id="filterHeading">Sök och filtrera</h2>
+      <div class="search-wrap">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <label class="sr-only" for="searchInput">Sök bland ärenden</label><input class="search" id="searchInput" type="search" placeholder="Sök på ärendenummer, ämne, kund, agent, tjänst eller kategori…" autocomplete="off">
+        <button class="clear-search" id="clearSearch" type="button" aria-label="Rensa sökning">✕</button>
+      </div>
+      <div class="filters">
+        <div class="field"><label for="statusFilter">Status</label><select id="statusFilter"><option value="">Alla statusar</option></select></div>
+        <div class="field"><label for="priorityFilter">Prioritet</label><select id="priorityFilter"><option value="">Alla prioriteter</option></select></div>
+        <div class="field"><label for="agentFilter">Agent</label><select id="agentFilter"><option value="">Alla agenter</option><option value="__unassigned">Ej tilldelade</option></select></div>
+        <div class="field"><label for="serviceFilter">Tjänst</label><select id="serviceFilter"><option value="">Alla tjänster</option></select></div>
+        <div class="field"><label for="categoryFilter">Kategori</label><select id="categoryFilter"><option value="">Alla kategorier</option></select></div>
+        <div class="field desktop-sort"><label for="sortSelect">Sortera</label><select id="sortSelect"><option value="updated-desc">Senast uppdaterade</option><option value="created-desc">Senast skapade</option><option value="created-asc">Äldst skapade</option><option value="priority-desc">Högst prioritet</option><option value="subject-asc">Ämne A–Ö</option></select></div>
+      </div>
+      <div class="filter-actions"><div class="chips" id="activeChips" aria-live="polite"></div><button class="reset" id="resetFilters" type="button">Rensa alla filter</button></div>
+    </section>
+    <div class="result-meta"><strong id="resultCount">0 ärenden</strong><div class="field sort-mobile"><label for="sortSelectMobile">Sortera</label><select id="sortSelectMobile"><option value="updated-desc">Senast uppdaterade</option><option value="created-desc">Senast skapade</option><option value="created-asc">Äldst skapade</option><option value="priority-desc">Högst prioritet</option><option value="subject-asc">Ämne A–Ö</option></select></div><span class="subtle" id="filterHint"></span></div>
+    <div id="state" class="table-card"><div class="loading"><div class="loading-spinner"></div>Hämtar ärenden…</div></div>
+    <div class="cards" id="cards"></div>
+  </main>
+</div>
+<script type="module">
+  import * as apiModule from "./js/api.js";
+  import * as authModule from "./js/auth.js";
+  import * as configModule from "./js/config.js";
+
+  const $ = id => document.getElementById(id);
+  const els = {search:$('searchInput'),clear:$('clearSearch'),status:$('statusFilter'),priority:$('priorityFilter'),agent:$('agentFilter'),service:$('serviceFilter'),category:$('categoryFilter'),sort:$('sortSelect'),sortMobile:$('sortSelectMobile'),chips:$('activeChips'),reset:$('resetFilters'),count:$('resultCount'),summary:$('summary'),hint:$('filterHint'),state:$('state'),cards:$('cards'),refresh:$('refreshButton'),logout:$('logoutButton')};
+  const statusLabels={open:'Öppen',new:'Ny',inprogress:'Pågår',in_progress:'Pågår',pending:'Väntar',waiting:'Väntar',resolved:'Löst',closed:'Stängd'};
+  const priorityLabels={urgent:'Akut',high:'Hög',normal:'Normal',medium:'Normal',low:'Låg'};
+  const priorityRank={urgent:5,high:4,normal:3,medium:3,low:2};
+  const filters={q:'',status:'',priority:'',agent:'',service:'',category:'',sort:'updated-desc'};
+  let tickets=[]; let agents=[];
+
+  function esc(value=''){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+  function norm(value=''){return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+  function key(value=''){return norm(value).replace(/[\s-]+/g,'');}
+  function asDate(value){const d=value?new Date(value):null;return d&&!Number.isNaN(d.valueOf())?d:null;}
+  function dateText(value){const d=asDate(value);return d?new Intl.DateTimeFormat('sv-SE',{dateStyle:'medium',timeStyle:'short'}).format(d):'–';}
+  function arrayValue(value){return Array.isArray(value)?value:[];}
+  function uniq(values){return [...new Set(values.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'sv'));}
+  function ticketAgent(t){return t.assignedAgentName||t.agentName||agents.find(a=>String(a.id)===String(t.assignedAgentId||t.agentId))?.name||'';}
+  function statusClass(v){const k=key(v);if(['closed','resolved','stangd','lost'].includes(k))return 'status-closed';if(['inprogress','pagar'].includes(k))return 'status-progress';if(['pending','waiting','vantar'].includes(k))return 'status-waiting';return 'status-open';}
+  function priorityClass(v){const k=key(v);if(['urgent','akut'].includes(k))return 'priority-urgent';if(['high','hog'].includes(k))return 'priority-high';if(['low','lag'].includes(k))return 'priority-low';return 'priority-normal';}
+  function label(map,value){return map[key(value)]||value||'–';}
+
+  function authState(){
+    for(const name of Object.keys(localStorage)){try{const value=JSON.parse(localStorage.getItem(name));if(value&&typeof value==='object'&&(value.token||value.user))return value;}catch{}}
+    return null;
+  }
+  async function request(path,options={}){
+    const fn=apiModule.api||apiModule.request||apiModule.apiFetch||apiModule.default;
+    if(typeof fn==='function'){
+      const result=await fn(path,options);
+      if(result instanceof Response){const text=await result.text();const data=text?JSON.parse(text):null;if(!result.ok)throw new Error(data?.error||`HTTP ${result.status}`);return data;}
+      return result;
+    }
+    const base=String(configModule.API_BASE||'').replace(/\/$/,''); const state=authState();
+    const headers={...(options.body?{'Content-Type':'application/json'}:{}),...(state?.token?{Authorization:`Bearer ${state.token}`} : {}),...(options.headers||{})};
+    const response=await fetch(base+path,{...options,headers}); const text=await response.text(); let data=null;try{data=text?JSON.parse(text):null;}catch{data=text;}
+    if(!response.ok)throw new Error(data?.error||data||`HTTP ${response.status}`); return data;
+  }
+  function getUser(){try{return (authModule.getSession?.()||authModule.session?.()||authState())?.user||authModule.getUser?.()||null;}catch{return authState()?.user||null;}}
+  async function logout(){if(!confirm('Vill du logga ut?'))return;try{if(typeof authModule.logout==='function')await authModule.logout();else if(typeof authModule.clearSession==='function')authModule.clearSession();else localStorage.clear();}finally{location.href='login.html';}}
+
+  function addOptions(select,values,selected=''){const keep=[...select.options].map(o=>o.value);for(const value of uniq(values)){if(!keep.includes(value)){const o=document.createElement('option');o.value=value;o.textContent=value;select.append(o);}}select.value=selected;}
+  function setupOptions(settings={}){
+    const statuses=uniq([...tickets.map(t=>t.status), 'Open','In progress','Pending','Closed']);
+    const priorities=uniq([...tickets.map(t=>t.priority), 'Low','Normal','High','Urgent']);
+    addOptions(els.status,statuses,filters.status); addOptions(els.priority,priorities,filters.priority);
+    addOptions(els.agent,[...agents.map(a=>a.name),...tickets.map(ticketAgent)],filters.agent);
+    addOptions(els.service,[...arrayValue(settings.services),...arrayValue(settings.serviceOptions),...tickets.map(t=>t.service)],filters.service);
+    addOptions(els.category,[...arrayValue(settings.categories),...arrayValue(settings.categoryOptions),...tickets.map(t=>t.category)],filters.category);
+  }
+  function searchable(t){return norm([t.id,t.subject,t.title,t.description,t.customerName,t.customer?.name,t.customerEmail,t.service,t.category,t.status,t.priority,ticketAgent(t)].filter(Boolean).join(' '));}
+  function matches(t){
+    if(filters.q&&!searchable(t).includes(norm(filters.q)))return false;
+    if(filters.status&&key(t.status)!==key(filters.status))return false;
+    if(filters.priority&&key(t.priority)!==key(filters.priority))return false;
+    const agent=ticketAgent(t); if(filters.agent==='__unassigned'&&agent)return false;if(filters.agent&&filters.agent!=='__unassigned'&&key(agent)!==key(filters.agent))return false;
+    if(filters.service&&key(t.service)!==key(filters.service))return false;if(filters.category&&key(t.category)!==key(filters.category))return false;return true;
+  }
+  function sorted(items){const list=[...items];const date=v=>asDate(v)?.valueOf()||0;list.sort((a,b)=>{switch(filters.sort){case'created-desc':return date(b.createdAt)-date(a.createdAt);case'created-asc':return date(a.createdAt)-date(b.createdAt);case'priority-desc':return (priorityRank[key(b.priority)]||0)-(priorityRank[key(a.priority)]||0)||date(b.updatedAt)-date(a.updatedAt);case'subject-asc':return String(a.subject||a.title||'').localeCompare(String(b.subject||b.title||''),'sv');default:return date(b.updatedAt||b.createdAt)-date(a.updatedAt||a.createdAt);}});return list;}
+  function render(){
+    const result=sorted(tickets.filter(matches));const active=['q','status','priority','agent','service','category'].filter(k=>filters[k]).length;
+    els.count.textContent=`${result.length} ${result.length===1?'ärende':'ärenden'}`;els.summary.textContent=`${tickets.length} ${tickets.length===1?'ärende totalt':'ärenden totalt'}`;els.hint.textContent=active?`${active} aktiva filter`:'';els.clear.classList.toggle('show',Boolean(filters.q));
+    renderChips();saveState();syncUrl();
+    if(!result.length){els.state.innerHTML=`<div class="empty"><h2>Inga ärenden matchar</h2><p>${tickets.length?'Prova att ändra sökningen eller rensa filtren.':'Det finns inga registrerade ärenden ännu.'}</p></div>`;els.cards.innerHTML='';return;}
+    els.state.innerHTML=`<div class="table-scroll"><table class="tickets-table"><thead><tr><th>ID</th><th><button type="button" data-sort="subject-asc">Ämne</button></th><th>Kund</th><th>Status</th><th>Prioritet</th><th>Tjänst / kategori</th><th>Agent</th><th><button type="button" data-sort="updated-desc">Uppdaterad</button></th></tr></thead><tbody>${result.map(rowHtml).join('')}</tbody></table></div>`;
+    els.cards.innerHTML=result.map(cardHtml).join('');
+    els.state.querySelectorAll('[data-sort]').forEach(b=>b.addEventListener('click',()=>{filters.sort=b.dataset.sort;els.sort.value=filters.sort;els.sortMobile.value=filters.sort;render();}));
+    els.state.querySelectorAll('tbody tr').forEach(row=>row.addEventListener('click',e=>{if(!e.target.closest('a'))location.href=`ticket.html?id=${encodeURIComponent(row.dataset.id)}`;}));
+  }
+  function rowHtml(t){const subject=t.subject||t.title||'Utan ämne';const customer=t.customerName||t.customer?.name||'–';const detail=t.description||'';return `<tr data-id="${esc(t.id)}"><td class="id">#${esc(t.id)}</td><td><a class="ticket-link" href="ticket.html?id=${encodeURIComponent(t.id)}">${esc(subject)}<small>${esc(detail)}</small></a></td><td>${esc(customer)}</td><td><span class="badge ${statusClass(t.status)}">${esc(label(statusLabels,t.status))}</span></td><td><span class="badge ${priorityClass(t.priority)}">${esc(label(priorityLabels,t.priority))}</span></td><td>${esc(t.service||'–')}<br><span class="subtle">${esc(t.category||'Ingen kategori')}</span></td><td>${esc(ticketAgent(t)||'Ej tilldelad')}</td><td class="subtle">${esc(dateText(t.updatedAt||t.createdAt))}</td></tr>`;}
+  function cardHtml(t){return `<a class="ticket-card" href="ticket.html?id=${encodeURIComponent(t.id)}"><div class="ticket-card-top"><span class="id">#${esc(t.id)}</span><span class="badge ${statusClass(t.status)}">${esc(label(statusLabels,t.status))}</span></div><h2>${esc(t.subject||t.title||'Utan ämne')}</h2><p>${esc(t.customerName||t.customer?.name||'Okänd kund')}</p><div class="ticket-card-meta"><span><span class="badge ${priorityClass(t.priority)}">${esc(label(priorityLabels,t.priority))}</span><br><small class="subtle">${esc(ticketAgent(t)||'Ej tilldelad')}</small></span><small class="subtle">${esc(dateText(t.updatedAt||t.createdAt))}</small></div></a>`;}
+  function renderChips(){const names={q:'Sökning',status:'Status',priority:'Prioritet',agent:'Agent',service:'Tjänst',category:'Kategori'};els.chips.innerHTML=Object.entries(names).filter(([k])=>filters[k]).map(([k,n])=>`<button class="chip" type="button" data-key="${k}" title="Ta bort filter"><span>${esc(n)}: ${esc(filters[k]==='__unassigned'?'Ej tilldelade':filters[k])}</span> ×</button>`).join('');els.chips.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{setFilter(b.dataset.key,'');render();}));}
+  function setFilter(name,value){filters[name]=value;if(name==='q')els.search.value=value;else if(els[name])els[name].value=value;}
+  function resetAll(){Object.assign(filters,{q:'',status:'',priority:'',agent:'',service:'',category:''});els.search.value='';[els.status,els.priority,els.agent,els.service,els.category].forEach(s=>s.value='');render();}
+  function saveState(){sessionStorage.setItem('eventfulDeskTicketFilters',JSON.stringify(filters));}
+  function restoreState(){let stored={};try{stored=JSON.parse(sessionStorage.getItem('eventfulDeskTicketFilters'))||{};}catch{}const query=new URLSearchParams(location.search);for(const k of Object.keys(filters)){if(query.has(k))filters[k]=query.get(k);else if(stored[k]!=null)filters[k]=stored[k];}els.search.value=filters.q;els.sort.value=filters.sort;els.sortMobile.value=filters.sort;}
+  function syncUrl(){const q=new URLSearchParams();for(const [k,v] of Object.entries(filters))if(v&&!(k==='sort'&&v==='updated-desc'))q.set(k,v);history.replaceState(null,'',location.pathname+(q.size?`?${q}`:''));}
+  function debounce(fn,wait=180){let timer;return(...args)=>{clearTimeout(timer);timer=setTimeout(()=>fn(...args),wait);};}
+  async function load(){els.refresh.disabled=true;els.state.innerHTML='<div class="loading"><div class="loading-spinner"></div>Hämtar ärenden…</div>';els.cards.innerHTML='';try{const [ticketData,agentData,settingsData]=await Promise.all([request('/api/tickets'),request('/api/agents').catch(()=>[]),request('/api/settings').catch(()=>({}))]);tickets=arrayValue(ticketData?.tickets||ticketData);agents=arrayValue(agentData?.agents||agentData);setupOptions(settingsData||{});render();}catch(error){els.state.innerHTML=`<div class="error"><strong>Kunde inte hämta ärenden.</strong><br>${esc(error.message||error)}</div>`;els.summary.textContent='Ett fel uppstod';}finally{els.refresh.disabled=false;}}
+
+  restoreState(); const user=getUser();els.logout.textContent=`Logga ut${user?.name?` · ${user.name.split(' ')[0]}`:''}`;
+  els.search.addEventListener('input',debounce(()=>{filters.q=els.search.value;render();}));els.clear.addEventListener('click',()=>{setFilter('q','');render();els.search.focus();});
+  for(const name of ['status','priority','agent','service','category'])els[name].addEventListener('change',()=>{filters[name]=els[name].value;render();});
+  els.sort.addEventListener('change',()=>{filters.sort=els.sort.value;els.sortMobile.value=filters.sort;render();});els.sortMobile.addEventListener('change',()=>{filters.sort=els.sortMobile.value;els.sort.value=filters.sort;render();});
+  els.reset.addEventListener('click',resetAll);els.refresh.addEventListener('click',load);els.logout.addEventListener('click',logout);
+  document.addEventListener('keydown',e=>{if(e.key==='/'&&!/input|select|textarea/i.test(document.activeElement.tagName)){e.preventDefault();els.search.focus();}});
+  load();
+</script>
+</body>
+</html>
