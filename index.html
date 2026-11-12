@@ -13,8 +13,8 @@
     :root{--dash-ink:#0b1730;--dash-muted:#63738c;--dash-blue:#2f6df6;--dash-blue-soft:#eaf1ff;--dash-green:#159a70;--dash-orange:#e78a21;--dash-red:#d94d59;--dash-line:#e3eaf4;--dash-bg:#f4f7fb;--dash-card:#fff;--dash-shadow:0 14px 40px rgba(19,42,79,.07)}
     *{box-sizing:border-box}
     body.dashboard-body{margin:0;background:var(--dash-bg);color:var(--dash-ink);font-family:Inter,system-ui,sans-serif;min-height:100vh}
-    #sidebar{position:fixed;inset:0 auto 0 0;width:280px;z-index:20}
-    .dashboard-page{margin-left:280px;max-width:none!important;min-height:100vh;padding:42px clamp(24px,4vw,64px) 64px}
+    #app-sidebar{position:fixed;inset:0 auto 0 0;width:272px;z-index:20}
+    .dashboard-page{margin-left:272px;max-width:none!important;min-height:100vh;padding:42px clamp(24px,4vw,64px) 64px}
     .dashboard-page button,.dashboard-page select{font:inherit}
     .dash-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}
     .dash-eyebrow{margin:0 0 7px;color:var(--dash-blue);font-size:12px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
@@ -52,12 +52,12 @@
     .questions-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.question-button{text-align:left;border:1px solid var(--dash-line);border-radius:14px;background:#f8fafd;color:var(--dash-ink);min-height:76px;padding:12px;cursor:pointer;font-size:12px;font-weight:800;line-height:1.35}.question-button:hover,.question-button.active{border-color:#8eb0fb;background:var(--dash-blue-soft);color:#154ebf}.insight-answer{margin-top:14px;padding:16px;border-radius:14px;background:#0f1b32;color:#fff;font-size:14px;line-height:1.55}.insight-answer strong{color:#7dacff}.insight-answer a{color:#fff;font-weight:800}
     .empty{color:var(--dash-muted);font-size:13px;padding:18px;text-align:center}.full-width{grid-column:1/-1}.section-space{margin-top:18px}.footnote{margin:13px 2px 0;color:var(--dash-muted);font-size:11px;line-height:1.5}
     @media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr}.questions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:820px){#sidebar{position:relative;width:100%}.dashboard-page{margin-left:0;padding:26px 18px 48px}.dash-head{align-items:flex-start}.filter-panel{grid-template-columns:1fr 1fr}.reset-button{width:100%}.kpi-grid{gap:12px}.kpi{min-height:135px}.questions-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:820px){#app-sidebar{position:relative;width:100%}.dashboard-page{margin-left:0;padding:26px 18px 48px}.dash-head{align-items:flex-start}.filter-panel{grid-template-columns:1fr 1fr}.reset-button{width:100%}.kpi-grid{gap:12px}.kpi{min-height:135px}.questions-grid{grid-template-columns:1fr 1fr}}
     @media(max-width:560px){.dash-head{display:block}.refresh-button{margin-top:16px}.filter-panel,.kpi-grid,.questions-grid{grid-template-columns:1fr}.kpi{min-height:125px}.status-legend{grid-template-columns:1fr}.bar-row{grid-template-columns:minmax(90px,1fr) minmax(90px,1.3fr) auto}.dash-card{padding:17px}.card-head{display:block}.card-head select{margin-top:10px;max-width:none;width:100%}}
   </style>
 </head>
 <body class="dashboard-body">
-  <aside id="sidebar" aria-label="Huvudmeny"></aside>
+  <aside id="app-sidebar" class="kb-sidebar" aria-label="Huvudmeny"></aside>
   <main class="page dashboard-page">
     <header class="dash-head">
       <div>
