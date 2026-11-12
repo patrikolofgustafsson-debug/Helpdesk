@@ -33,15 +33,15 @@
     button:disabled { cursor: not-allowed; opacity: .58; }
     [hidden] { display: none !important; }
 
-    .kb-app { min-height: 100vh; display: grid; grid-template-columns: 268px minmax(0, 1fr); }
-    .kb-sidebar { position: sticky; top: 0; height: 100vh; padding: 30px 22px 24px; color: #fff; background: var(--kb-navy); display: flex; flex-direction: column; overflow-y: auto; }
-    .kb-brand-small { margin: 0 0 7px; color: #67a3ff; font-weight: 900; font-size: 13px; letter-spacing: .23em; line-height: 1.35; }
-    .kb-brand { margin: 0 0 34px; font-size: 27px; font-weight: 950; font-style: italic; letter-spacing: -.03em; line-height: 1.05; }
-    .kb-nav { display: grid; gap: 7px; }
-    .kb-nav a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px 14px; border-radius: 14px; color: #aebbd0; text-decoration: none; font-size: 14px; font-weight: 850; letter-spacing: .01em; }
+    .kb-app { min-height: 100vh; display: grid; grid-template-columns: 436px minmax(0, 1fr); }
+    .kb-sidebar { position: sticky; top: 0; height: 100vh; padding: 40px 35px 24px; color: #fff; background: var(--kb-navy); display: flex; flex-direction: column; overflow-y: auto; }
+    .kb-brand-small { margin: 0 0 14px; color: #67a3ff; font-weight: 900; font-size: 24px; letter-spacing: .23em; line-height: 1.35; }
+    .kb-brand { margin: 0 0 72px; font-size: 42px; font-weight: 950; font-style: italic; letter-spacing: -.03em; line-height: 1.05; }
+    .kb-nav { display: grid; gap: 13px; }
+    .kb-nav a { display: flex; align-items: center; gap: 18px; min-height: 58px; padding: 14px 24px; border-radius: 24px; color: #91acd0; text-decoration: none; font-size: 22px; font-weight: 850; letter-spacing: .01em; text-transform: uppercase; }
     .kb-nav a:hover { color: #fff; background: rgba(255,255,255,.07); }
     .kb-nav a[aria-current="page"] { color: #fff; background: var(--kb-blue); }
-    .kb-nav svg { width: 19px; height: 19px; flex: none; }
+    .kb-nav svg { width: 25px; height: 25px; flex: none; }
     .kb-sidebar-spacer { flex: 1; min-height: 24px; }
     .kb-logout { width: 100%; min-height: 52px; border: 0; border-radius: 14px; color: #dce6f6; background: var(--kb-navy-2); font-weight: 850; }
     .kb-logout:hover { color: #fff; background: #263754; }
@@ -186,6 +186,8 @@
         <a href="agents.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6m0-5c3 0 5 1.5 5 5"/></svg>Agenter</a>
         <a href="kb.html" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M8 4v16m3-12h5m-5 4h5"/></svg>Kunskapsbas</a>
         <a href="reports.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg>Rapporter</a>
+        <a href="classification.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 13 11 22l-9-9V4h9z"/><circle cx="7" cy="9" r="1"/></svg>Klassificering</a>
+        <a href="settings.html"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.36.36.7.6 1 .3.33.7.53 1.1.6h.1v4h-.1c-.4.07-.8.27-1.1.6-.24.3-.44.64-.6 1z"/></svg>Inställningar</a>
       </nav>
       <div class="kb-sidebar-spacer"></div>
       <button class="kb-logout" id="logoutButton" type="button">Logga ut</button>
