@@ -1,3 +1,318 @@
-<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard - Eventful Desk</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">  <link rel="stylesheet" href="sidebar.css">
-</head><body><div class="app-shell"><aside id="app-sidebar" class="kb-sidebar" aria-label="Huvudmeny"></aside><main class="page"><p class="eyebrow">Support management</p><h1 class="title">Dashboard</h1><div class="metrics"><div class="card metric"><span>Totalt ärenden</span><strong id="total">0</strong></div><div class="card metric blue"><span>Öppna just nu</span><strong id="open">0</strong></div><div class="card metric"><span>Väntande</span><strong id="pending">0</strong></div></div><div class="grid grid-2" style="margin-top:28px"><div class="card"><h2>Fördelning per tjänst</h2><div id="services"></div></div><div class="card"><h2>Toppföretag</h2><div id="companies"></div></div></div></main></div><script type="module">import{requireRole}from'./js/auth.js';import{get}from'./js/api.js';import{esc}from'./js/util.js';await requireRole(['admin','agent']);const d=await get('/api/dashboard');total.textContent=d.total;open.textContent=d.open;pending.textContent=d.pending;services.innerHTML=Object.entries(d.byService).map(([n,c])=>`<p><b>${esc(n)}</b><span style="float:right">${c}</span></p>`).join('');companies.innerHTML=d.topCompanies.map(x=>`<p><b>${esc(x.name)}</b><span style="float:right">${x.count}</span></p>`).join('');</script>  <script src="sidebar.js"></script>
-</body></html>
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard - Eventful Desk</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--dash-ink:#0b1730;--dash-muted:#63738c;--dash-blue:#2f6df6;--dash-blue-soft:#eaf1ff;--dash-green:#159a70;--dash-orange:#e78a21;--dash-red:#d94d59;--dash-line:#e3eaf4;--dash-bg:#f4f7fb;--dash-card:#fff;--dash-shadow:0 14px 40px rgba(19,42,79,.07)}
+    *{box-sizing:border-box}
+    body.dashboard-body{margin:0;background:var(--dash-bg);color:var(--dash-ink);font-family:Inter,system-ui,sans-serif;min-height:100vh}
+    #sidebar{position:fixed;inset:0 auto 0 0;width:280px;z-index:20}
+    .dashboard-page{margin-left:280px;max-width:none!important;min-height:100vh;padding:42px clamp(24px,4vw,64px) 64px}
+    .dashboard-page button,.dashboard-page select{font:inherit}
+    .dash-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}
+    .dash-eyebrow{margin:0 0 7px;color:var(--dash-blue);font-size:12px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+    .dash-title{margin:0;font-size:clamp(38px,5vw,68px);line-height:.95;font-weight:900;font-style:italic;letter-spacing:-.055em;text-transform:uppercase}
+    .dash-subtitle{margin:14px 0 0;color:var(--dash-muted);font-size:15px}
+    .refresh-button{border:1px solid var(--dash-line);background:#fff;color:var(--dash-ink);border-radius:13px;padding:12px 17px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(19,42,79,.05)}
+    .refresh-button:hover{border-color:#b9c9e7}.refresh-button:disabled{opacity:.55;cursor:wait}
+    .filter-panel,.dash-card{background:var(--dash-card);border:1px solid var(--dash-line);box-shadow:var(--dash-shadow)}
+    .filter-panel{display:grid;grid-template-columns:1.1fr 1.35fr 1.35fr auto;gap:14px;align-items:end;padding:18px;border-radius:20px;margin-bottom:22px}
+    .filter-field label{display:block;margin:0 0 7px;color:#53627a;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .filter-field select{width:100%;min-height:44px;border:1px solid #d9e3f0;border-radius:12px;background:#fff;color:var(--dash-ink);padding:0 38px 0 13px;font-weight:700}
+    .reset-button{min-height:44px;border:0;border-radius:12px;background:var(--dash-blue-soft);color:#1c58d8;padding:0 16px;font-weight:800;cursor:pointer}
+    .load-state{display:none;margin:0 0 18px;padding:14px 17px;border-radius:14px;background:#fff;border:1px solid var(--dash-line);color:var(--dash-muted)}
+    .load-state.show{display:block}.load-state.error{color:#a72c39;background:#fff4f5;border-color:#f2c9cf}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+    .kpi{position:relative;min-height:150px;padding:21px;border-radius:20px;overflow:hidden}
+    .kpi::after{content:"";position:absolute;width:94px;height:94px;border-radius:50%;right:-34px;top:-34px;background:var(--dash-blue-soft)}
+    .kpi.primary{background:linear-gradient(145deg,#2f6df6,#245be0);color:#fff;border-color:#2f6df6}
+    .kpi.primary::after{background:rgba(255,255,255,.12)}
+    .kpi-label{display:block;max-width:85%;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:.75}
+    .kpi strong{display:block;margin:14px 0 7px;font-size:clamp(30px,3vw,44px);line-height:1;font-weight:900;letter-spacing:-.04em}
+    .kpi small{display:block;color:var(--dash-muted);font-size:12px;line-height:1.45}.kpi.primary small{color:rgba(255,255,255,.78)}
+    .dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.75fr);gap:18px;margin-bottom:18px}
+    .dash-card{border-radius:22px;padding:22px;min-width:0}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+    .card-head h2{margin:0;font-size:19px;letter-spacing:-.02em}.card-head p{margin:5px 0 0;color:var(--dash-muted);font-size:12px}
+    .card-head select{max-width:220px;border:1px solid #d9e3f0;border-radius:10px;background:#fff;padding:9px 32px 9px 11px;color:var(--dash-ink);font-size:12px;font-weight:700}
+    .bar-list{display:grid;gap:14px}.bar-row{display:grid;grid-template-columns:minmax(100px,1.2fr) minmax(120px,2fr) auto;gap:12px;align-items:center;font-size:13px}
+    .bar-label{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:10px;background:#edf2f8;border-radius:99px;overflow:hidden}.bar-fill{height:100%;border-radius:inherit;background:var(--dash-blue);min-width:3px}.bar-value{font-weight:900;font-variant-numeric:tabular-nums}
+    .status-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.legend-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:13px;background:#f8fafd}.legend-dot{width:10px;height:10px;border-radius:50%}.legend-copy{min-width:0}.legend-copy strong{display:block;font-size:18px}.legend-copy span{display:block;color:var(--dash-muted);font-size:11px;margin-top:2px}
+    .trend{display:flex;align-items:flex-end;gap:7px;height:170px;padding-top:12px;border-bottom:1px solid var(--dash-line)}
+    .trend-column{display:flex;flex:1;min-width:0;height:100%;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px}.trend-bar{width:min(34px,72%);background:linear-gradient(180deg,#5b89f8,#2f6df6);border-radius:7px 7px 2px 2px;min-height:3px;transition:height .2s}.trend-column strong{font-size:11px}.trend-column span{height:25px;color:var(--dash-muted);font-size:9px;white-space:nowrap;transform:rotate(-35deg);transform-origin:center}
+    .table-wrap{overflow:auto;border:1px solid var(--dash-line);border-radius:15px}.data-table{width:100%;border-collapse:collapse;min-width:760px}.data-table th{padding:11px 13px;background:#f7f9fc;color:#5d6a80;text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase}.data-table td{padding:13px;border-top:1px solid var(--dash-line);font-size:12px;vertical-align:middle}.data-table tbody tr:hover{background:#fafcff}.data-table a{color:var(--dash-ink);font-weight:800;text-decoration:none}.data-table a:hover{color:var(--dash-blue)}.numeric{text-align:right!important;font-variant-numeric:tabular-nums}.muted{color:var(--dash-muted)}
+    .rank{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:8px;background:var(--dash-blue-soft);color:#245bdc;font-weight:900;margin-right:8px}.badge{display:inline-flex;align-items:center;border-radius:99px;padding:5px 8px;background:#edf2f8;color:#53627a;font-size:10px;font-weight:800}.badge.warn{background:#fff2df;color:#9c5c06}.badge.good{background:#e8f8f1;color:#087653}
+    .questions-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.question-button{text-align:left;border:1px solid var(--dash-line);border-radius:14px;background:#f8fafd;color:var(--dash-ink);min-height:76px;padding:12px;cursor:pointer;font-size:12px;font-weight:800;line-height:1.35}.question-button:hover,.question-button.active{border-color:#8eb0fb;background:var(--dash-blue-soft);color:#154ebf}.insight-answer{margin-top:14px;padding:16px;border-radius:14px;background:#0f1b32;color:#fff;font-size:14px;line-height:1.55}.insight-answer strong{color:#7dacff}.insight-answer a{color:#fff;font-weight:800}
+    .empty{color:var(--dash-muted);font-size:13px;padding:18px;text-align:center}.full-width{grid-column:1/-1}.section-space{margin-top:18px}.footnote{margin:13px 2px 0;color:var(--dash-muted);font-size:11px;line-height:1.5}
+    @media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr}.questions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:820px){#sidebar{position:relative;width:100%}.dashboard-page{margin-left:0;padding:26px 18px 48px}.dash-head{align-items:flex-start}.filter-panel{grid-template-columns:1fr 1fr}.reset-button{width:100%}.kpi-grid{gap:12px}.kpi{min-height:135px}.questions-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:560px){.dash-head{display:block}.refresh-button{margin-top:16px}.filter-panel,.kpi-grid,.questions-grid{grid-template-columns:1fr}.kpi{min-height:125px}.status-legend{grid-template-columns:1fr}.bar-row{grid-template-columns:minmax(90px,1fr) minmax(90px,1.3fr) auto}.dash-card{padding:17px}.card-head{display:block}.card-head select{margin-top:10px;max-width:none;width:100%}}
+  </style>
+</head>
+<body class="dashboard-body">
+  <aside id="sidebar" aria-label="Huvudmeny"></aside>
+  <main class="page dashboard-page">
+    <header class="dash-head">
+      <div>
+        <p class="dash-eyebrow">Support management</p>
+        <h1 class="dash-title">Dashboard</h1>
+        <p class="dash-subtitle" id="scopeText">Överblick över supportens nuläge och prestation.</p>
+      </div>
+      <button class="refresh-button" id="refreshButton" type="button">↻ Uppdatera</button>
+    </header>
+
+    <section class="filter-panel" aria-label="Dashboardfilter">
+      <div class="filter-field"><label for="periodFilter">Period</label><select id="periodFilter"><option value="7">Senaste 7 dagarna</option><option value="30" selected>Senaste 30 dagarna</option><option value="90">Senaste 90 dagarna</option><option value="365">Senaste året</option><option value="all">Alla datum</option></select></div>
+      <div class="filter-field"><label for="customerFilter">Kund</label><select id="customerFilter"><option value="">Alla kunder</option></select></div>
+      <div class="filter-field"><label for="agentFilter">Agent</label><select id="agentFilter"><option value="">Alla agenter</option><option value="__unassigned">Ej tilldelade</option></select></div>
+      <button class="reset-button" id="resetFilters" type="button">Rensa filter</button>
+    </section>
+
+    <div class="load-state show" id="loadState">Hämtar dashboarddata…</div>
+
+    <section class="kpi-grid" aria-label="Nyckeltal">
+      <article class="dash-card kpi primary"><span class="kpi-label">Ärenden i urvalet</span><strong id="kpiTotal">–</strong><small id="kpiTotalNote">Skapade under vald period</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Öppna</span><strong id="kpiOpen">–</strong><small id="kpiOpenNote">Aktuellt öppet i urvalet</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Lösta</span><strong id="kpiResolved">–</strong><small id="kpiResolvedNote">0 % av ärendena</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Väntande</span><strong id="kpiPending">–</strong><small id="kpiPendingNote">Behöver följas upp</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Median lösningstid</span><strong id="kpiMedian">–</strong><small>Mer robust än genomsnitt vid extremvärden</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Genomsnittlig lösningstid</span><strong id="kpiAverage">–</strong><small id="kpiAverageNote">Baserat på lösta ärenden</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Lösta inom 24 h</span><strong id="kpiWithin24">–</strong><small id="kpiWithin24Note">Andel med beräkningsbar lösningstid</small></article>
+      <article class="dash-card kpi"><span class="kpi-label">Ej tilldelade</span><strong id="kpiUnassigned">–</strong><small id="kpiUnassignedNote">Öppna ärenden utan agent</small></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="dash-card">
+        <div class="card-head"><div><h2>Ärenden över tid</h2><p>Antal skapade ärenden per vecka i vald period</p></div></div>
+        <div class="trend" id="trendChart"></div>
+      </article>
+      <article class="dash-card">
+        <div class="card-head"><div><h2>Statusfördelning</h2><p>Fördelning i aktuellt urval</p></div></div>
+        <div class="status-legend" id="statusLegend"></div>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="dash-card">
+        <div class="card-head"><div><h2>Statistik per kund</h2><p>Jämför volym, öppna ärenden och lösningstid</p></div><select id="customerSort" aria-label="Sortera kundstatistik"><option value="total-desc">Flest ärenden</option><option value="open-desc">Flest öppna</option><option value="resolution-asc">Kortast lösningstid</option><option value="recent-desc">Senast aktivitet</option><option value="name-asc">Kundnamn A–Ö</option></select></div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Kund</th><th class="numeric">Totalt</th><th class="numeric">Öppna</th><th class="numeric">Väntar</th><th class="numeric">Lösta</th><th class="numeric">Median lösningstid</th><th>Senast aktivitet</th></tr></thead><tbody id="customerTable"></tbody></table></div>
+      </article>
+      <article class="dash-card">
+        <div class="card-head"><div><h2>Vanligaste tjänsterna</h2><p>Volym i aktuellt urval</p></div></div>
+        <div class="bar-list" id="serviceBars"></div>
+      </article>
+    </section>
+
+    <section class="dash-card section-space">
+      <div class="card-head"><div><h2>Agentstatistik</h2><p>Arbetsbelastning och prestation per agent</p></div><select id="agentSort" aria-label="Sortera agentstatistik"><option value="assigned-desc">Flest tilldelade</option><option value="open-desc">Flest öppna</option><option value="resolved-desc">Flest lösta</option><option value="resolution-asc">Kortast lösningstid</option><option value="backlog-desc">Störst äldre backlog</option><option value="name-asc">Namn A–Ö</option></select></div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>Agent</th><th class="numeric">Tilldelade</th><th class="numeric">Öppna</th><th class="numeric">Lösta</th><th class="numeric">Lösningsgrad</th><th class="numeric">Median lösningstid</th><th class="numeric">Öppna &gt; 7 dagar</th></tr></thead><tbody id="agentTable"></tbody></table></div>
+    </section>
+
+    <section class="dashboard-grid section-space">
+      <article class="dash-card">
+        <div class="card-head"><div><h2>Prioritet</h2><p>Ärenden per prioritetsnivå</p></div></div>
+        <div class="bar-list" id="priorityBars"></div>
+      </article>
+      <article class="dash-card">
+        <div class="card-head"><div><h2>Kategorier</h2><p>De vanligaste statistikområdena</p></div></div>
+        <div class="bar-list" id="categoryBars"></div>
+      </article>
+    </section>
+
+    <section class="dash-card section-space">
+      <div class="card-head"><div><h2>Statistikfrågor</h2><p>Klicka på en fråga för att få ett svar från aktuellt urval</p></div></div>
+      <div class="questions-grid" id="questionButtons">
+        <button class="question-button" type="button" data-question="topResolver">Vem har löst flest ärenden?</button>
+        <button class="question-button" type="button" data-question="fastestAgent">Vem har kortast lösningstid?</button>
+        <button class="question-button" type="button" data-question="topOpenCustomer">Vilken kund har flest öppna ärenden?</button>
+        <button class="question-button" type="button" data-question="oldestOpen">Vilket är det äldsta öppna ärendet?</button>
+        <button class="question-button" type="button" data-question="unassigned">Hur många öppna ärenden saknar agent?</button>
+        <button class="question-button" type="button" data-question="workload">Är arbetsbelastningen jämnt fördelad?</button>
+        <button class="question-button" type="button" data-question="topService">Vilken tjänst genererar flest ärenden?</button>
+        <button class="question-button" type="button" data-question="trend">Ökar eller minskar ärendevolymen?</button>
+      </div>
+      <div class="insight-answer" id="insightAnswer"><strong>Välj en fråga</strong> så analyseras det aktuella urvalet.</div>
+      <p class="footnote">Lösningstid beräknas från skapandetid till löst/stängd tid. Om separat lösningstid saknas används senaste uppdatering för redan lösta eller stängda ärenden. Periodfiltret utgår från när ärendet skapades.</p>
+    </section>
+  </main>
+
+  <script src="sidebar.js" defer></script>
+  <script type="module">
+    import { requireRole } from './js/auth.js';
+    import { get } from './js/api.js';
+
+    await requireRole(['admin','agent']);
+
+    const $ = id => document.getElementById(id);
+    const els = {
+      period:$('periodFilter'), customer:$('customerFilter'), agent:$('agentFilter'), reset:$('resetFilters'), refresh:$('refreshButton'), state:$('loadState'), scope:$('scopeText'),
+      total:$('kpiTotal'), totalNote:$('kpiTotalNote'), open:$('kpiOpen'), openNote:$('kpiOpenNote'), resolved:$('kpiResolved'), resolvedNote:$('kpiResolvedNote'), pending:$('kpiPending'), pendingNote:$('kpiPendingNote'), median:$('kpiMedian'), average:$('kpiAverage'), averageNote:$('kpiAverageNote'), within24:$('kpiWithin24'), within24Note:$('kpiWithin24Note'), unassigned:$('kpiUnassigned'), unassignedNote:$('kpiUnassignedNote'),
+      trend:$('trendChart'), status:$('statusLegend'), customers:$('customerTable'), customerSort:$('customerSort'), services:$('serviceBars'), agents:$('agentTable'), agentSort:$('agentSort'), priorities:$('priorityBars'), categories:$('categoryBars'), questions:$('questionButtons'), answer:$('insightAnswer')
+    };
+
+    const state = { tickets:[], agents:[], customers:[], dashboard:null, filtered:[], customerStats:[], agentStats:[], activeQuestion:null };
+    const statusLabels={open:'Öppna',new:'Nya',inprogress:'Pågår',in_progress:'Pågår',pending:'Väntande',waiting:'Väntande',resolved:'Lösta',closed:'Stängda'};
+    const statusColors={open:'#2f6df6',new:'#2f6df6',inprogress:'#7f63d9',in_progress:'#7f63d9',pending:'#e78a21',waiting:'#e78a21',resolved:'#159a70',closed:'#64748b'};
+    const priorityLabels={urgent:'Akut',high:'Hög',normal:'Normal',medium:'Normal',low:'Låg'};
+    const resolvedKeys=new Set(['resolved','closed','solved','löst','lost','stängd','stangd']);
+    const pendingKeys=new Set(['pending','waiting','väntar','vantar','väntande']);
+
+    function esc(value=''){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+    function norm(value=''){return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+    function key(value=''){return norm(value).replace(/[\s-]+/g,'');}
+    function list(value,property){if(Array.isArray(value))return value;if(value&&Array.isArray(value[property]))return value[property];return [];}
+    function asDate(value){const date=value?new Date(value):null;return date&&!Number.isNaN(date.valueOf())?date:null;}
+    function createdDate(ticket){return asDate(ticket.createdAt||ticket.created_at||ticket.created||ticket.dateCreated);}
+    function updatedDate(ticket){return asDate(ticket.updatedAt||ticket.updated_at||ticket.modifiedAt||ticket.createdAt);}
+    function resolutionDate(ticket){return asDate(ticket.resolvedAt||ticket.solvedAt||ticket.closedAt||ticket.completedAt||ticket.resolutionDate)||(isResolved(ticket)?updatedDate(ticket):null);}
+    function isResolved(ticket){return resolvedKeys.has(key(ticket.status));}
+    function isPending(ticket){return pendingKeys.has(key(ticket.status));}
+    function isOpen(ticket){return !isResolved(ticket);}
+    function durationMs(ticket){const start=createdDate(ticket),end=resolutionDate(ticket);return start&&end&&end>=start?end-start:null;}
+    function median(values){const sorted=values.filter(Number.isFinite).sort((a,b)=>a-b);if(!sorted.length)return null;const middle=Math.floor(sorted.length/2);return sorted.length%2?sorted[middle]:(sorted[middle-1]+sorted[middle])/2;}
+    function average(values){const valid=values.filter(Number.isFinite);return valid.length?valid.reduce((sum,value)=>sum+value,0)/valid.length:null;}
+    function pct(part,total){return total?Math.round(part/total*100):0;}
+    function formatDuration(ms){if(!Number.isFinite(ms))return '–';const minutes=Math.max(0,Math.round(ms/60000));if(minutes<60)return `${minutes} min`;const hours=Math.floor(minutes/60),rest=minutes%60;if(hours<24)return `${hours} h${rest?` ${rest} min`:''}`;const days=Math.floor(hours/24),remaining=hours%24;return `${days} d${remaining?` ${remaining} h`:''}`;}
+    function formatDate(value){const date=asDate(value);return date?new Intl.DateTimeFormat('sv-SE',{dateStyle:'medium'}).format(date):'–';}
+    function ageDays(ticket){const start=createdDate(ticket);return start?Math.max(0,Math.floor((Date.now()-start)/86400000)):null;}
+    function field(ticket,...names){for(const name of names)if(ticket?.[name]!=null&&ticket[name]!=='')return ticket[name];return '';}
+    function agentId(ticket){return String(field(ticket,'assignedAgentId','agentId','assigneeId')||'');}
+    function customerId(ticket){return String(field(ticket,'customerId','requesterId')||ticket.customer?.id||'');}
+    function agentName(ticket){const id=agentId(ticket);return field(ticket,'assignedAgentName','agentName','assigneeName')||state.agents.find(agent=>String(agent.id)===id)?.name||'';}
+    function customerName(ticket){const id=customerId(ticket);const customer=state.customers.find(item=>String(item.id)===id);return field(ticket,'customerCompany','company')||ticket.customer?.company||customer?.company||field(ticket,'customerName')||ticket.customer?.name||customer?.name||field(ticket,'customerEmail')||'Okänd kund';}
+    function ticketSubject(ticket){return field(ticket,'subject','title')||`Ärende #${ticket.id||'–'}`;}
+    function ticketMatchesAgent(ticket,value){if(!value)return true;if(value==='__unassigned')return !agentName(ticket)&&!agentId(ticket);return agentId(ticket)===value||key(agentName(ticket))===key(value);}
+    function ticketMatchesCustomer(ticket,value){if(!value)return true;return customerId(ticket)===value||key(customerName(ticket))===key(value);}
+    function withinPeriod(ticket){if(els.period.value==='all')return true;const created=createdDate(ticket);if(!created)return false;const start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-Number(els.period.value)+1);return created>=start;}
+    function groupCount(items,getter){const map=new Map();for(const item of items){const label=getter(item)||'Ej angivet';map.set(label,(map.get(label)||0)+1);}return [...map.entries()].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'sv'));}
+    function uniqueOptions(values){return [...new Set(values.filter(Boolean).map(String))].sort((a,b)=>a.localeCompare(b,'sv'));}
+
+    function populateFilters(){
+      const currentCustomer=els.customer.value,currentAgent=els.agent.value;
+      const customerRows=[];
+      for(const customer of state.customers)customerRows.push({value:String(customer.id),label:customer.company||customer.name||customer.email});
+      for(const ticket of state.tickets){const name=customerName(ticket);if(name&&!customerRows.some(row=>key(row.label)===key(name)))customerRows.push({value:name,label:name});}
+      customerRows.sort((a,b)=>String(a.label).localeCompare(String(b.label),'sv'));
+      els.customer.innerHTML='<option value="">Alla kunder</option>'+customerRows.map(row=>`<option value="${esc(row.value)}">${esc(row.label)}</option>`).join('');
+      const agentRows=[];
+      for(const agent of state.agents)agentRows.push({value:String(agent.id),label:agent.name||agent.email});
+      for(const ticket of state.tickets){const name=agentName(ticket);if(name&&!agentRows.some(row=>key(row.label)===key(name)))agentRows.push({value:name,label:name});}
+      agentRows.sort((a,b)=>String(a.label).localeCompare(String(b.label),'sv'));
+      els.agent.innerHTML='<option value="">Alla agenter</option><option value="__unassigned">Ej tilldelade</option>'+agentRows.map(row=>`<option value="${esc(row.value)}">${esc(row.label)}</option>`).join('');
+      if([...els.customer.options].some(option=>option.value===currentCustomer))els.customer.value=currentCustomer;
+      if([...els.agent.options].some(option=>option.value===currentAgent))els.agent.value=currentAgent;
+    }
+
+    function applyFilters(){
+      state.filtered=state.tickets.filter(ticket=>withinPeriod(ticket)&&ticketMatchesCustomer(ticket,els.customer.value)&&ticketMatchesAgent(ticket,els.agent.value));
+      const periodLabel=els.period.options[els.period.selectedIndex].textContent.toLowerCase();
+      const customerLabel=els.customer.value?els.customer.options[els.customer.selectedIndex].textContent:'alla kunder';
+      const agentLabel=els.agent.value?els.agent.options[els.agent.selectedIndex].textContent:'alla agenter';
+      els.scope.textContent=`Visar ${periodLabel}, ${customerLabel} och ${agentLabel}.`;
+      renderAll();
+    }
+
+    function renderKpis(){
+      const items=state.filtered,resolved=items.filter(isResolved),open=items.filter(isOpen),pending=items.filter(isPending),durations=resolved.map(durationMs).filter(Number.isFinite);
+      const unassigned=open.filter(ticket=>!agentName(ticket)&&!agentId(ticket));
+      const within24=durations.filter(value=>value<=86400000).length;
+      els.total.textContent=items.length;els.totalNote.textContent=`${items.length===1?'Skapat ärende':'Skapade ärenden'} under vald period`;
+      els.open.textContent=open.length;els.openNote.textContent=`${pct(open.length,items.length)} % av urvalet`;
+      els.resolved.textContent=resolved.length;els.resolvedNote.textContent=`${pct(resolved.length,items.length)} % av urvalet`;
+      els.pending.textContent=pending.length;els.pendingNote.textContent=pending.length?'Behöver följas upp':'Inga väntande i urvalet';
+      els.median.textContent=formatDuration(median(durations));els.average.textContent=formatDuration(average(durations));els.averageNote.textContent=`Baserat på ${durations.length} ärenden med tidsdata`;
+      els.within24.textContent=durations.length?`${pct(within24,durations.length)} %`:'–';els.within24Note.textContent=durations.length?`${within24} av ${durations.length} lösta`:'Ingen beräkningsbar lösningstid';
+      els.unassigned.textContent=unassigned.length;els.unassignedNote.textContent=unassigned.length?'Öppna ärenden utan agent':'Alla öppna ärenden är tilldelade';
+    }
+
+    function renderStatus(){
+      const grouped=groupCount(state.filtered,ticket=>statusLabels[key(ticket.status)]||ticket.status||'Ej angivet');
+      const colorFor=name=>{const original=state.filtered.find(ticket=>(statusLabels[key(ticket.status)]||ticket.status||'Ej angivet')===name);return statusColors[key(original?.status)]||'#8fa1b8';};
+      els.status.innerHTML=grouped.length?grouped.map(row=>`<div class="legend-item"><span class="legend-dot" style="background:${colorFor(row.name)}"></span><div class="legend-copy"><strong>${row.count}</strong><span>${esc(row.name)} · ${pct(row.count,state.filtered.length)} %</span></div></div>`).join(''):'<div class="empty full-width">Ingen statusdata i urvalet.</div>';
+    }
+
+    function renderTrend(){
+      const days=els.period.value==='all'?84:Math.max(7,Number(els.period.value));const weeks=Math.min(12,Math.max(1,Math.ceil(days/7)));const now=new Date();now.setHours(23,59,59,999);const buckets=[];
+      for(let index=weeks-1;index>=0;index--){const end=new Date(now);end.setDate(end.getDate()-index*7);const start=new Date(end);start.setDate(start.getDate()-6);start.setHours(0,0,0,0);const count=state.filtered.filter(ticket=>{const date=createdDate(ticket);return date&&date>=start&&date<=end;}).length;buckets.push({start,end,count});}
+      const max=Math.max(1,...buckets.map(bucket=>bucket.count));
+      els.trend.innerHTML=buckets.map(bucket=>`<div class="trend-column" title="${esc(formatDate(bucket.start))}–${esc(formatDate(bucket.end))}: ${bucket.count} ärenden"><strong>${bucket.count}</strong><div class="trend-bar" style="height:${Math.max(3,Math.round(bucket.count/max*115))}px"></div><span>${esc(new Intl.DateTimeFormat('sv-SE',{day:'numeric',month:'short'}).format(bucket.start))}</span></div>`).join('');
+    }
+
+    function buildCustomerStats(){
+      const map=new Map();for(const ticket of state.filtered){const name=customerName(ticket);if(!map.has(name))map.set(name,{name,tickets:[]});map.get(name).tickets.push(ticket);}
+      state.customerStats=[...map.values()].map(row=>{const resolved=row.tickets.filter(isResolved),durations=resolved.map(durationMs).filter(Number.isFinite);return {...row,total:row.tickets.length,open:row.tickets.filter(isOpen).length,pending:row.tickets.filter(isPending).length,resolved:resolved.length,median:median(durations),recent:Math.max(0,...row.tickets.map(ticket=>updatedDate(ticket)?.valueOf()||0))};});
+    }
+    function sortCustomerStats(rows){const value=els.customerSort.value;return [...rows].sort((a,b)=>{if(value==='open-desc')return b.open-a.open||b.total-a.total;if(value==='resolution-asc')return (a.median??Infinity)-(b.median??Infinity)||b.total-a.total;if(value==='recent-desc')return b.recent-a.recent;if(value==='name-asc')return a.name.localeCompare(b.name,'sv');return b.total-a.total||b.open-a.open;});}
+    function renderCustomers(){
+      buildCustomerStats();const rows=sortCustomerStats(state.customerStats);
+      els.customers.innerHTML=rows.length?rows.map((row,index)=>`<tr><td><span class="rank">${index+1}</span><a href="tickets.html?q=${encodeURIComponent(row.name)}">${esc(row.name)}</a></td><td class="numeric">${row.total}</td><td class="numeric">${row.open}</td><td class="numeric">${row.pending}</td><td class="numeric">${row.resolved}</td><td class="numeric">${esc(formatDuration(row.median))}</td><td>${esc(formatDate(row.recent))}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">Ingen kundstatistik i urvalet.</td></tr>';
+    }
+
+    function buildAgentStats(){
+      const rows=new Map();for(const agent of state.agents)rows.set(String(agent.id),{id:String(agent.id),name:agent.name||agent.email||'Namnlös agent',tickets:[]});
+      for(const ticket of state.filtered){const id=agentId(ticket),name=agentName(ticket);if(!id&&!name)continue;const mapKey=id||`name:${key(name)}`;if(!rows.has(mapKey))rows.set(mapKey,{id:id||name,name:name||'Okänd agent',tickets:[]});rows.get(mapKey).tickets.push(ticket);}
+      state.agentStats=[...rows.values()].map(row=>{const resolved=row.tickets.filter(isResolved),open=row.tickets.filter(isOpen),durations=resolved.map(durationMs).filter(Number.isFinite);return {...row,assigned:row.tickets.length,open:open.length,resolved:resolved.length,resolutionRate:pct(resolved.length,row.tickets.length),median:median(durations),backlog:open.filter(ticket=>(ageDays(ticket)??0)>7).length};});
+    }
+    function sortAgentStats(rows){const value=els.agentSort.value;return [...rows].sort((a,b)=>{if(value==='open-desc')return b.open-a.open||b.assigned-a.assigned;if(value==='resolved-desc')return b.resolved-a.resolved||a.median-b.median;if(value==='resolution-asc')return (a.median??Infinity)-(b.median??Infinity)||b.resolved-a.resolved;if(value==='backlog-desc')return b.backlog-a.backlog||b.open-a.open;if(value==='name-asc')return a.name.localeCompare(b.name,'sv');return b.assigned-a.assigned||b.open-a.open;});}
+    function renderAgents(){
+      buildAgentStats();const rows=sortAgentStats(state.agentStats);
+      els.agents.innerHTML=rows.length?rows.map(row=>`<tr><td><a href="tickets.html?agent=${encodeURIComponent(row.name)}">${esc(row.name)}</a></td><td class="numeric">${row.assigned}</td><td class="numeric">${row.open}</td><td class="numeric">${row.resolved}</td><td class="numeric"><span class="badge ${row.resolutionRate>=75?'good':row.resolutionRate<40&&row.assigned?'warn':''}">${row.resolutionRate} %</span></td><td class="numeric">${esc(formatDuration(row.median))}</td><td class="numeric">${row.backlog}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">Ingen agentstatistik i urvalet.</td></tr>';
+    }
+
+    function renderBars(element,rows,limit=7){
+      const selected=rows.slice(0,limit),max=Math.max(1,...selected.map(row=>row.count));
+      element.innerHTML=selected.length?selected.map(row=>`<div class="bar-row"><span class="bar-label" title="${esc(row.name)}">${esc(row.name)}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.max(2,row.count/max*100)}%"></span></span><span class="bar-value">${row.count}</span></div>`).join(''):'<div class="empty">Ingen data i urvalet.</div>';
+    }
+    function renderDistributions(){
+      renderBars(els.services,groupCount(state.filtered,ticket=>ticket.service||'Ingen tjänst'));
+      renderBars(els.priorities,groupCount(state.filtered,ticket=>priorityLabels[key(ticket.priority)]||ticket.priority||'Ingen prioritet'));
+      renderBars(els.categories,groupCount(state.filtered,ticket=>ticket.category||'Ingen kategori'));
+    }
+
+    function previousPeriodCount(){if(els.period.value==='all')return null;const days=Number(els.period.value),end=new Date();end.setHours(0,0,0,0);end.setDate(end.getDate()-days+1);const start=new Date(end);start.setDate(start.getDate()-days);return state.tickets.filter(ticket=>{const date=createdDate(ticket);return date&&date>=start&&date<end&&ticketMatchesCustomer(ticket,els.customer.value)&&ticketMatchesAgent(ticket,els.agent.value);}).length;}
+    function answerQuestion(question){
+      const rowsA=state.agentStats,rowsC=state.customerStats,items=state.filtered;let html='';
+      if(question==='topResolver'){const row=[...rowsA].sort((a,b)=>b.resolved-a.resolved)[0];html=row&&row.resolved?`<strong>${esc(row.name)}</strong> har löst flest ärenden i urvalet: ${row.resolved} stycken.`:'Det finns inga lösta ärenden med agent i urvalet.';}
+      if(question==='fastestAgent'){const row=[...rowsA].filter(item=>Number.isFinite(item.median)&&item.resolved>0).sort((a,b)=>a.median-b.median)[0];html=row?`<strong>${esc(row.name)}</strong> har kortast medianlösningstid: ${esc(formatDuration(row.median))}, baserat på ${row.resolved} lösta ärenden.`:'Det finns inte tillräcklig tidsdata för att jämföra agenter.';}
+      if(question==='topOpenCustomer'){const row=[...rowsC].sort((a,b)=>b.open-a.open)[0];html=row&&row.open?`<strong>${esc(row.name)}</strong> har flest öppna ärenden: <a href="tickets.html?q=${encodeURIComponent(row.name)}">${row.open} stycken</a>.`:'Det finns inga öppna kundärenden i urvalet.';}
+      if(question==='oldestOpen'){const ticket=items.filter(isOpen).filter(ticket=>createdDate(ticket)).sort((a,b)=>createdDate(a)-createdDate(b))[0];html=ticket?`Äldst är <a href="ticket.html?id=${encodeURIComponent(ticket.id)}">#${esc(ticket.id)} – ${esc(ticketSubject(ticket))}</a>, skapat ${esc(formatDate(createdDate(ticket)))} (${ageDays(ticket)} dagar sedan).`:'Det finns inga öppna ärenden med skapandedatum i urvalet.';}
+      if(question==='unassigned'){const unassigned=items.filter(ticket=>isOpen(ticket)&&!agentName(ticket)&&!agentId(ticket));html=unassigned.length?`Det finns <strong>${unassigned.length} öppna ärenden utan agent</strong>. <a href="tickets.html?agent=__unassigned">Visa dem i ärendelistan</a>.`:'Alla öppna ärenden i urvalet är tilldelade.';}
+      if(question==='workload'){const active=rowsA.filter(row=>row.open>0).sort((a,b)=>b.open-a.open);if(active.length<2)html='Minst två agenter med öppna ärenden krävs för att bedöma fördelningen.';else{const highest=active[0],lowest=active[active.length-1],difference=highest.open-lowest.open;html=difference<=1?`Arbetsbelastningen är <strong>relativt jämn</strong>: skillnaden mellan högsta och lägsta öppna belastning är ${difference} ärende.`:`Belastningen är <strong>ojämnt fördelad</strong>. ${esc(highest.name)} har ${highest.open} öppna jämfört med ${esc(lowest.name)} som har ${lowest.open}.`;}}
+      if(question==='topService'){const row=groupCount(items,ticket=>ticket.service||'Ingen tjänst')[0];html=row?`<strong>${esc(row.name)}</strong> genererar flest ärenden: ${row.count} stycken (${pct(row.count,items.length)} % av urvalet).`:'Det finns ingen tjänstedata i urvalet.';}
+      if(question==='trend'){const previous=previousPeriodCount();if(previous==null)html='Välj en avgränsad period för att jämföra med föregående lika långa period.';else{const current=items.length,diff=current-previous,change=previous?Math.round(diff/previous*100):null;html=diff===0?`Volymen är <strong>oförändrad</strong>: ${current} ärenden i båda perioderna.`:diff>0?`Volymen <strong>ökar</strong>: ${current} ärenden mot ${previous} föregående period${change!=null?` (+${change} %)` :''}.`:`Volymen <strong>minskar</strong>: ${current} ärenden mot ${previous} föregående period${change!=null?` (${change} %)` :''}.`;}}
+      els.answer.innerHTML=html||'Välj en statistikfråga.';
+      els.questions.querySelectorAll('[data-question]').forEach(button=>button.classList.toggle('active',button.dataset.question===question));state.activeQuestion=question;
+    }
+
+    function renderAll(){renderKpis();renderTrend();renderStatus();renderCustomers();renderAgents();renderDistributions();if(state.activeQuestion)answerQuestion(state.activeQuestion);}
+
+    async function load(){
+      els.refresh.disabled=true;els.state.className='load-state show';els.state.textContent='Hämtar dashboarddata…';
+      try{
+        const results=await Promise.allSettled([get('/api/tickets'),get('/api/agents'),get('/api/customers'),get('/api/dashboard')]);
+        if(results[0].status!=='fulfilled')throw results[0].reason;
+        state.tickets=list(results[0].value,'tickets');state.agents=results[1].status==='fulfilled'?list(results[1].value,'agents'):[];state.customers=results[2].status==='fulfilled'?list(results[2].value,'customers'):[];state.dashboard=results[3].status==='fulfilled'?results[3].value:null;
+        populateFilters();applyFilters();
+        const partial=[];if(results[1].status==='rejected')partial.push('agenter');if(results[2].status==='rejected')partial.push('kunder');
+        if(partial.length){els.state.className='load-state show';els.state.textContent=`Ärendestatistiken är laddad, men ${partial.join(' och ')} kunde inte hämtas. Namn hämtas där det går från ärendedatan.`;}else{els.state.className='load-state';}
+      }catch(error){els.state.className='load-state show error';els.state.textContent=`Dashboarden kunde inte laddas: ${error?.message||error}`;state.tickets=[];applyFilters();}
+      finally{els.refresh.disabled=false;}
+    }
+
+    [els.period,els.customer,els.agent].forEach(element=>element.addEventListener('change',applyFilters));
+    els.customerSort.addEventListener('change',renderCustomers);els.agentSort.addEventListener('change',renderAgents);
+    els.reset.addEventListener('click',()=>{els.period.value='30';els.customer.value='';els.agent.value='';applyFilters();});
+    els.refresh.addEventListener('click',load);
+    els.questions.addEventListener('click',event=>{const button=event.target.closest('[data-question]');if(button)answerQuestion(button.dataset.question);});
+
+    load();
+  </script>
+</body>
+</html>
