@@ -5,9 +5,10 @@
 <title>Klassificering - Eventful Desk</title>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
-<main class="page">
+<div class="app-shell"><aside id="app-sidebar" class="kb-sidebar" aria-label="Huvudmeny"></aside><main class="page">
   <p class="eyebrow">Administration</p>
   <h1 class="title">Klassificering</h1>
   <div id="message" class="status"></div>
@@ -23,13 +24,13 @@
       <div id="categories"></div>
     </section>
   </div>
-</main>
+</main></div>
 <script type="module">
-import { mount } from './js/layout.js';
+
 import { requireRole } from './js/auth.js';
 import { get, put } from './js/api.js';
 import { esc } from './js/util.js';
-await requireRole(['admin']); mount('categories.html');
+await requireRole(['admin']); 
 const messageEl=document.getElementById('message'),servicesEl=document.getElementById('services'),categoriesEl=document.getElementById('categories'),newServiceEl=document.getElementById('newService'),newCategoryEl=document.getElementById('newCategory');
 let settings={systemName:'Eventful Desk',defaultService:'Microsoft 365',services:[],categories:[]};
 function show(t,e=false){messageEl.textContent=t;messageEl.classList.toggle('error',e)}
@@ -39,4 +40,5 @@ async function save(){try{settings=await put('/api/settings',settings);render();
 async function add(kind,input){const v=input.value.trim();if(!v)return;if(settings[kind].some(x=>x.toLowerCase()===v.toLowerCase())){show('Värdet finns redan.',true);return}settings[kind].push(v);input.value='';await save()}
 document.getElementById('addService').onclick=()=>add('services',newServiceEl);document.getElementById('addCategory').onclick=()=>add('categories',newCategoryEl);
 try{const s=await get('/api/settings');settings={...settings,...s,services:Array.isArray(s.services)?s.services:[],categories:Array.isArray(s.categories)?s.categories:[]};render()}catch(e){show(e.message,true)}
-</script></body></html>
+</script>  <script src="sidebar.js"></script>
+</body></html>

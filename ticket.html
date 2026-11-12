@@ -14,15 +14,12 @@
     @media(max-width:1050px){.layout{grid-template-columns:1fr}.side-card{position:static}.ticket-head{display:block}.head-actions{margin-top:15px}}
     @media(max-width:820px){.app{display:block}.sidebar{position:static;height:auto;padding:16px 18px}.brand{margin-bottom:12px}.nav{display:flex;overflow:auto;padding-bottom:4px}.nav a{white-space:nowrap}.nav-section{display:none}.logout{margin-top:12px;width:100%}.main{padding:26px 15px 48px}.card{padding:19px;border-radius:20px}.ticket-head h1{font-size:34px}.event-top{display:block}.event-time{display:block;margin-top:3px}.toolbar{align-items:start}.segmented{max-width:100%}}
   </style>
+  <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
 <a class="skip-link" href="#content">Hoppa till innehåll</a>
 <div class="app">
-  <aside class="sidebar" aria-label="Huvudmeny">
-    <p class="eyebrow">SUPPORT MANAGEMENT</p><div class="brand">EVENTFUL DESK<br>V2</div>
-    <nav class="nav"><a href="index.html">⌁ &nbsp;DASHBOARD</a><a class="active" aria-current="page" href="tickets.html">▣ &nbsp;ÄRENDEN</a><a href="customers.html">▦ &nbsp;KUNDER</a><a href="agents.html">♟ &nbsp;AGENTER</a><a href="kb.html">▤ &nbsp;KUNSKAPSBAS</a><a href="reports.html">▥ &nbsp;RAPPORTER</a><div class="nav-section">ADMINISTRATION</div><a href="categories.html">⌘ &nbsp;KLASSIFICERING</a><a href="settings.html">⚙ &nbsp;INSTÄLLNINGAR</a></nav>
-    <button class="logout" id="logoutButton" type="button">Logga ut</button>
-  </aside>
+  <aside id="app-sidebar" class="kb-sidebar" aria-label="Huvudmeny"></aside>
   <main class="main" id="content">
     <a class="back" href="tickets.html">← Tillbaka till ärenden</a>
     <div id="pageState"><div class="loading"><div class="spinner"></div>Hämtar ärendet…</div></div>
@@ -87,5 +84,6 @@
 
   els.logout.textContent=`Logga ut${currentUser.name?` · ${currentUser.name.split(' ')[0]}`:''}`;els.logout.addEventListener('click',logout);els.reload.addEventListener('click',()=>load(false));els.replyTab.addEventListener('click',()=>setComposer('reply'));els.noteTab.addEventListener('click',()=>setComposer('note'));els.send.addEventListener('click',sendMessage);els.save.addEventListener('click',saveDetails);els.filters.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{timelineFilter=b.dataset.filter;els.filters.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));renderTimeline();}));els.order.addEventListener('click',()=>{newestFirst=!newestFirst;els.order.textContent=newestFirst?'Nyast först ↓':'Äldst först ↑';renderTimeline();});els.text.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')sendMessage();});load();
 </script>
+  <script src="sidebar.js"></script>
 </body>
 </html>

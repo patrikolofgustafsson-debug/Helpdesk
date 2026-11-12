@@ -9,16 +9,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
-<main class="page">
+<div class="app-shell"><aside id="app-sidebar" class="kb-sidebar" aria-label="Huvudmeny"></aside><main class="page">
   <div class="toolbar">
     <h1 class="title" style="flex:1">Agenter</h1>
     <button id="newBtn" class="btn btn-primary">Ny agent</button>
   </div>
   <div id="message" class="status"></div>
   <div id="cards" class="grid grid-2"></div>
-</main>
+</main></div>
 
 <div id="modal" class="modal">
   <div class="modal-box stack">
@@ -38,13 +39,13 @@
 </div>
 
 <script type="module">
-import { mount } from './js/layout.js';
+
 import { requireRole } from './js/auth.js';
 import { get, post, put, del } from './js/api.js';
 import { esc } from './js/util.js';
 
 await requireRole(['admin']);
-mount('agents.html');
+
 
 const cardsEl = document.getElementById('cards');
 const messageEl = document.getElementById('message');
@@ -215,5 +216,6 @@ modalEl.addEventListener('click', event => {
 
 await loadAgents();
 </script>
+  <script src="sidebar.js"></script>
 </body>
 </html>
