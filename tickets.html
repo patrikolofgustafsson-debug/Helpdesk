@@ -52,7 +52,7 @@
   import * as configModule from "./js/config.js";
 
   const $ = id => document.getElementById(id);
-  const els = {search:$('searchInput'),clear:$('clearSearch'),status:$('statusFilter'),priority:$('priorityFilter'),agent:$('agentFilter'),service:$('serviceFilter'),category:$('categoryFilter'),sort:$('sortSelect'),sortMobile:$('sortSelectMobile'),chips:$('activeChips'),reset:$('resetFilters'),count:$('resultCount'),summary:$('summary'),hint:$('filterHint'),state:$('state'),cards:$('cards'),refresh:$('refreshButton'),logout:$('logoutButton')};
+  const els = {search:$('searchInput'),clear:$('clearSearch'),status:$('statusFilter'),priority:$('priorityFilter'),agent:$('agentFilter'),service:$('serviceFilter'),category:$('categoryFilter'),sort:$('sortSelect'),sortMobile:$('sortSelectMobile'),chips:$('activeChips'),reset:$('resetFilters'),count:$('resultCount'),summary:$('summary'),hint:$('filterHint'),state:$('state'),cards:$('cards'),refresh:$('refreshButton'),logout:null};
   const statusLabels={open:'Öppen',new:'Ny',inprogress:'Pågår',in_progress:'Pågår',pending:'Väntar',waiting:'Väntar',resolved:'Löst',closed:'Stängd'};
   const priorityLabels={urgent:'Akut',high:'Hög',normal:'Normal',medium:'Normal',low:'Låg'};
   const priorityRank={urgent:5,high:4,normal:3,medium:3,low:2};
@@ -129,11 +129,11 @@
   function debounce(fn,wait=180){let timer;return(...args)=>{clearTimeout(timer);timer=setTimeout(()=>fn(...args),wait);};}
   async function load(){els.refresh.disabled=true;els.state.innerHTML='<div class="loading"><div class="loading-spinner"></div>Hämtar ärenden…</div>';els.cards.innerHTML='';try{const [ticketData,agentData,settingsData]=await Promise.all([request('/api/tickets'),request('/api/agents').catch(()=>[]),request('/api/settings').catch(()=>({}))]);tickets=arrayValue(ticketData?.tickets||ticketData);agents=arrayValue(agentData?.agents||agentData);setupOptions(settingsData||{});render();}catch(error){els.state.innerHTML=`<div class="error"><strong>Kunde inte hämta ärenden.</strong><br>${esc(error.message||error)}</div>`;els.summary.textContent='Ett fel uppstod';}finally{els.refresh.disabled=false;}}
 
-  restoreState(); const user=getUser();els.logout.textContent=`Logga ut${user?.name?` · ${user.name.split(' ')[0]}`:''}`;
+  restoreState(); const user=getUser();
   els.search.addEventListener('input',debounce(()=>{filters.q=els.search.value;render();}));els.clear.addEventListener('click',()=>{setFilter('q','');render();els.search.focus();});
   for(const name of ['status','priority','agent','service','category'])els[name].addEventListener('change',()=>{filters[name]=els[name].value;render();});
   els.sort.addEventListener('change',()=>{filters.sort=els.sort.value;els.sortMobile.value=filters.sort;render();});els.sortMobile.addEventListener('change',()=>{filters.sort=els.sortMobile.value;els.sort.value=filters.sort;render();});
-  els.reset.addEventListener('click',resetAll);els.refresh.addEventListener('click',load);els.logout.addEventListener('click',logout);
+  els.reset.addEventListener('click',resetAll);els.refresh.addEventListener('click',load);
   document.addEventListener('keydown',e=>{if(e.key==='/'&&!/input|select|textarea/i.test(document.activeElement.tagName)){e.preventDefault();els.search.focus();}});
   load();
 </script>
