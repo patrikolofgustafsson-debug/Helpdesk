@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Automatiska regler · Eventful Desk</title>
+  <style>
+    :root{--nav:#061527;--nav2:#0b2037;--blue:#1477e8;--blue2:#0c61c2;--ink:#0b1728;--muted:#64748b;--line:#dce5ef;--soft:#f4f7fb;--white:#fff;--green:#15803d;--amber:#b45309;--red:#c52a3a;--purple:#6d46c7;--shadow:0 10px 30px rgba(8,30,55,.09);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:#f7f9fc;color:var(--ink)}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{min-height:100vh;display:grid;grid-template-columns:236px minmax(0,1fr)}
+    aside{background:linear-gradient(180deg,var(--nav),var(--nav2));color:white;padding:28px 18px;position:sticky;top:0;height:100vh}.brand{display:flex;align-items:center;gap:12px;margin:0 8px 34px}.brand-mark{width:38px;height:38px;border:2px solid #fff;display:grid;place-items:center;font-weight:900;transform:skew(-8deg)}.brand-text{font-weight:900;font-size:17px;line-height:.9;letter-spacing:-.5px}.brand-text small{display:block;color:#61a7ff;font-size:11px;letter-spacing:1.2px;margin-top:7px}
+    nav a{display:flex;align-items:center;gap:11px;color:#cad7e6;text-decoration:none;padding:11px 12px;border-radius:8px;margin:3px 0;font-size:14px;font-weight:650}nav a:hover{background:#102b48;color:#fff}nav a.active{background:var(--blue);color:#fff}.nav-title{color:#6f87a1;text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:1.4px;margin:24px 12px 8px}.nav-icon{width:18px;text-align:center}.signout{position:absolute;bottom:20px;left:18px;right:18px;border-top:1px solid #1b3856;padding-top:14px}.signout button{width:100%;background:transparent;color:#cbd7e4;border:0;text-align:left;padding:10px 12px;border-radius:8px}.signout button:hover{background:#102b48;color:#fff}
+    main{padding:42px clamp(24px,4vw,62px) 70px;min-width:0}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:25px}.eyebrow{color:var(--blue);font-size:11px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.top h1{font-size:38px;letter-spacing:-1.7px;margin:6px 0 7px}.top p{margin:0;color:var(--muted);max-width:720px}.top-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:10px 15px;font-weight:750;min-height:42px}.btn:hover{border-color:#aebfd0;background:#fbfdff}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue2)}.btn.danger{color:var(--red)}.btn.small{padding:7px 10px;min-height:34px;font-size:13px}.btn:disabled{opacity:.55;cursor:not-allowed}
+    .notice{display:none;padding:12px 15px;border-radius:8px;margin:0 0 18px;border:1px solid}.notice.show{display:block}.notice.info{background:#ebf5ff;border-color:#b9dcff;color:#07579d}.notice.success{background:#eefbf2;border-color:#b8e5c3;color:#166534}.notice.error{background:#fff0f1;border-color:#ffc7cd;color:#9f1d2c}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:11px;padding:17px 18px;box-shadow:0 3px 12px rgba(8,30,55,.03)}.stat-label{color:var(--muted);font-size:12px;font-weight:750}.stat-value{font-size:27px;font-weight:900;margin-top:5px;letter-spacing:-1px}.stat-value.blue{color:var(--blue)}.stat-value.green{color:var(--green)}
+    .toolbar{display:flex;gap:10px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:16px;align-items:center}.search{position:relative;flex:1;min-width:180px}.search input{width:100%;padding:10px 12px 10px 37px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe}.search span{position:absolute;left:13px;top:10px;color:#8a9aae}.toolbar select{padding:10px 30px 10px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+    .rules{display:grid;gap:12px}.empty{background:#fff;border:1px dashed #bccada;border-radius:12px;padding:50px 24px;text-align:center;color:var(--muted)}.empty strong{display:block;color:var(--ink);font-size:18px;margin-bottom:7px}.rule{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 15px rgba(8,30,55,.035);display:grid;grid-template-columns:6px minmax(0,1fr)}.rule-accent{background:#aab8c8;border-radius:12px 0 0 12px}.rule.enabled .rule-accent{background:var(--blue)}.rule-body{padding:17px 18px}.rule-head{display:flex;gap:14px;justify-content:space-between;align-items:flex-start}.rule-title{display:flex;gap:11px;align-items:center;min-width:0}.order{width:30px;height:30px;border-radius:8px;background:var(--soft);display:grid;place-items:center;color:#56677b;font-size:12px;font-weight:850;flex:none}.rule h2{font-size:17px;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rule-desc{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:700px}.rule-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.switch{display:inline-flex;gap:8px;align-items:center;font-size:12px;font-weight:800;color:var(--muted);margin-right:4px}.switch input{width:36px;height:19px;accent-color:var(--blue)}.rule-meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0 41px}.pill{border-radius:999px;background:#eef4fb;color:#33506e;padding:5px 9px;font-size:11px;font-weight:750}.pill.trigger{background:#e7f2ff;color:#075fad}.pill.action{background:#f1ecff;color:#5b35a8}.pill.off{background:#f2f3f5;color:#7a8490}
+    dialog{border:0;border-radius:14px;padding:0;width:min(920px,calc(100vw - 28px));max-height:92vh;box-shadow:0 30px 90px rgba(5,20,40,.32)}dialog::backdrop{background:rgba(4,17,31,.56)}.modal-head{padding:22px 24px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px}.modal-head h2{margin:0;font-size:23px}.modal-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.x{border:0;background:#f0f4f8;border-radius:7px;width:35px;height:35px;font-size:20px}.modal-content{padding:22px 24px;max-height:calc(92vh - 150px);overflow:auto}.modal-foot{padding:15px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;background:#fbfcfe}.foot-right{display:flex;gap:9px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:800;color:#46576a}.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid #cdd8e4;border-radius:7px;background:#fff}.field textarea{resize:vertical;min-height:72px}.section{border-top:1px solid var(--line);margin-top:21px;padding-top:18px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.section h3{font-size:15px;margin:0}.help{color:var(--muted);font-size:12px;margin:4px 0 0}.builder-list{display:grid;gap:8px}.builder-row{display:grid;grid-template-columns:28px minmax(130px,.9fr) minmax(150px,1fr) minmax(150px,1.2fr) 35px;gap:8px;align-items:center;background:var(--soft);border-radius:9px;padding:9px}.builder-row.action-row{grid-template-columns:28px minmax(190px,.8fr) minmax(220px,1.4fr) 35px}.drag{color:#8a9aaa;text-align:center}.builder-row select,.builder-row input{width:100%;padding:8px;border:1px solid #cbd7e3;border-radius:6px;background:#fff;min-width:0}.remove-row{border:0;background:#fff;color:var(--red);width:34px;height:34px;border-radius:6px;font-weight:900}.check-row{display:flex;align-items:center;gap:9px;font-size:13px;margin-top:14px}.errors{display:none;background:#fff0f1;color:#9f1d2c;border:1px solid #ffc7cd;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px}.errors.show{display:block}.test-result{display:none;margin-top:14px;border:1px solid var(--line);border-radius:9px;padding:13px}.test-result.show{display:block}.test-match{border-left:4px solid var(--green);padding-left:10px;margin:8px 0}.muted{color:var(--muted)}
+    @media(max-width:960px){.app{grid-template-columns:78px 1fr}aside{padding:24px 11px}.brand-text,nav a span:not(.nav-icon),.nav-title,.signout span{display:none}.brand{margin-left:8px}.brand-mark{width:36px}.signout{left:10px;right:10px}nav a{justify-content:center}.stats{grid-template-columns:repeat(2,1fr)}.top{flex-direction:column}.top-actions{justify-content:flex-start}.rule-head{flex-direction:column}.rule-actions{justify-content:flex-start;margin-left:41px}}
+    @media(max-width:650px){.app{display:block}aside{height:auto;position:static;padding:13px;display:flex;align-items:center;gap:10px}.brand{margin:0}.brand-text{display:block}nav{display:none}.signout{position:static;margin-left:auto;border:0;padding:0;width:auto}.signout button{font-size:0}.signout button::after{content:"Logga ut";font-size:13px}main{padding:25px 15px 50px}.top h1{font-size:31px}.stats{grid-template-columns:1fr 1fr}.toolbar{align-items:stretch;flex-direction:column}.rule-body{padding:15px 13px}.rule-title{align-items:flex-start}.rule-actions,.rule-meta{margin-left:0}.builder-row,.builder-row.action-row{grid-template-columns:1fr}.drag{display:none}.grid2{grid-template-columns:1fr}.field.full{grid-column:1}.modal-foot{flex-direction:column}.foot-right{justify-content:flex-end}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="brand-mark">EV</div><div class="brand-text">EVENTFUL DESK<small>V2</small></div></div>
+    <nav aria-label="Huvudmeny">
+      <a href="index.html"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
+      <a href="tickets.html"><span class="nav-icon">▤</span><span>Ärenden</span></a>
+      <a href="customers.html"><span class="nav-icon">●</span><span>Kunder</span></a>
+      <a href="agents.html"><span class="nav-icon">♟</span><span>Agenter</span></a>
+      <a href="kb.html"><span class="nav-icon">▣</span><span>Supportbank</span></a>
+      <a href="reports.html"><span class="nav-icon">▥</span><span>Rapporter</span></a>
+      <div class="nav-title">Administration</div>
+      <a href="categories.html"><span class="nav-icon">◇</span><span>Klassificering</span></a>
+      <a class="active" href="automations.html" aria-current="page"><span class="nav-icon">⚡</span><span>Automatiska regler</span></a>
+    </nav>
+    <div class="signout"><button id="logoutBtn" type="button">↪ <span>Logga ut</span></button></div>
+  </aside>
+  <main>
+    <div class="top">
+      <div><div class="eyebrow">Administration</div><h1>Automatiska regler</h1><p>Låt Eventful Desk klassificera, prioritera och tilldela ärenden konsekvent. Reglerna körs i ordning och varje ändring loggas i ärendets historik.</p></div>
+      <div class="top-actions"><button class="btn" id="runBtn" type="button">▶ Kör regler nu</button><button class="btn primary" id="newBtn" type="button">＋ Ny regel</button></div>
+    </div>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <section class="stats" aria-label="Översikt">
+      <div class="stat"><div class="stat-label">Totalt antal regler</div><div class="stat-value" id="totalStat">–</div></div>
+      <div class="stat"><div class="stat-label">Aktiva</div><div class="stat-value green" id="activeStat">–</div></div>
+      <div class="stat"><div class="stat-label">Inaktiva</div><div class="stat-value" id="inactiveStat">–</div></div>
+      <div class="stat"><div class="stat-label">Senast ändrad</div><div class="stat-value blue" id="updatedStat" style="font-size:17px;letter-spacing:-.2px">–</div></div>
+    </section>
+    <div class="toolbar">
+      <div class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="Sök på namn, utlösare eller åtgärd…" aria-label="Sök regler"></div>
+      <select id="stateFilter" aria-label="Filtrera status"><option value="all">Alla regler</option><option value="enabled">Aktiva</option><option value="disabled">Inaktiva</option></select>
+      <select id="triggerFilter" aria-label="Filtrera utlösare"><option value="all">Alla utlösare</option></select>
+    </div>
+    <section id="rules" class="rules" aria-live="polite"></section>
+  </main>
+</div>
+
+<dialog id="ruleDialog">
+  <form id="ruleForm" method="dialog" novalidate>
+    <div class="modal-head"><div><h2 id="dialogTitle">Ny automatisk regel</h2><p>Villkor kontrolleras först. Åtgärder utförs bara när regeln matchar.</p></div><button class="x" type="button" id="closeDialog" aria-label="Stäng">×</button></div>
+    <div class="modal-content">
+      <div id="formErrors" class="errors" role="alert"></div>
+      <div class="grid2">
+        <div class="field"><label for="ruleName">Regelnamn *</label><input id="ruleName" maxlength="90" required placeholder="Tilldela FlowSync-ärenden"></div>
+        <div class="field"><label for="ruleTrigger">Utlösare *</label><select id="ruleTrigger"></select></div>
+        <div class="field full"><label for="ruleDescription">Beskrivning</label><textarea id="ruleDescription" maxlength="300" placeholder="Kort förklaring av vad regeln gör"></textarea></div>
+        <div class="field"><label for="ruleMatch">Matchning</label><select id="ruleMatch"><option value="all">Alla villkor måste stämma</option><option value="any">Minst ett villkor måste stämma</option></select></div>
+        <div class="field"><label for="ruleEnabled">Status</label><select id="ruleEnabled"><option value="true">Aktiv</option><option value="false">Inaktiv</option></select></div>
+      </div>
+      <section class="section"><div class="section-head"><div><h3>Villkor</h3><p class="help">Utan villkor matchar regeln alla ärenden för vald utlösare.</p></div><button id="addCondition" class="btn small" type="button">＋ Villkor</button></div><div id="conditionList" class="builder-list"></div></section>
+      <section class="section"><div class="section-head"><div><h3>Åtgärder</h3><p class="help">Åtgärderna utförs uppifrån och ned.</p></div><button id="addAction" class="btn small" type="button">＋ Åtgärd</button></div><div id="actionList" class="builder-list"></div><label class="check-row"><input id="stopProcessing" type="checkbox"> Stoppa efter denna regel, så att senare regler inte körs</label></section>
+      <section class="section"><div class="section-head"><div><h3>Testa mot ett befintligt ärende</h3><p class="help">Testet ändrar ingenting.</p></div></div><div class="grid2"><div class="field"><label for="testTicket">Ärende</label><select id="testTicket"><option value="">Välj ärende…</option></select></div><div class="field" style="align-self:end"><button id="testBtn" class="btn" type="button">Testa regeln</button></div></div><div id="testResult" class="test-result"></div></section>
+    </div>
+    <div class="modal-foot"><button id="deleteBtn" class="btn danger" type="button" hidden>Ta bort regel</button><div class="foot-right"><button class="btn" id="cancelBtn" type="button">Avbryt</button><button class="btn primary" id="saveBtn" type="submit">Spara regel</button></div></div>
+  </form>
+</dialog>
+<script src="js/config.js"></script>
+<script type="module">
+import {TRIGGERS,CONDITION_FIELDS,OPERATORS,ACTIONS,normalizeRule,validateRule,simulateRules,actionValueOptional} from "./js/automation-engine.js";
+
+const FALLBACK_API = "https://rough-rain-6ec8.patrik-olof-gustafsson.workers.dev";
+const els = Object.fromEntries([...document.querySelectorAll("[id]")].map(el => [el.id, el]));
+const state = { settings: {}, rules: [], agents: [], tickets: [], editingId: null, busy: false };
+const labels = {
+  triggers: Object.fromEntries(TRIGGERS.map(x => [x.value,x.label])),
+  actions: Object.fromEntries(ACTIONS.map(x => [x.value,x.label]))
+};
+
+function apiBase(){
+  const candidates=[window.EVENTFUL_CONFIG?.apiBaseUrl,window.EVENTFUL_CONFIG?.apiBase,window.CONFIG?.API_BASE,window.config?.apiBase,localStorage.getItem("apiBaseUrl")];
+  return String(candidates.find(Boolean)||FALLBACK_API).replace(/\/+$/,"");
+}
+function token(){
+  for(const key of ["eventful_token","authToken","sessionToken","token"]){const value=localStorage.getItem(key)||sessionStorage.getItem(key);if(value)return value.replace(/^"|"$/g,"");}
+  for(const store of [localStorage,sessionStorage]){
+    for(let i=0;i<store.length;i++){
+      const key=store.key(i),raw=store.getItem(key);if(!raw)continue;
+      if(/token/i.test(key)&&!raw.trim().startsWith("{"))return raw.replace(/^"|"$/g,"");
+      try{const value=JSON.parse(raw);const found=value?.token||value?.accessToken||value?.authToken||value?.sessionToken;if(found)return String(found);}catch{}
+    }
+  }
+  return "";
+}
+async function api(path,options={}){
+  const headers={"Accept":"application/json",...(options.body?{"Content-Type":"application/json"}:{}),...options.headers};
+  if(token())headers.Authorization=`Bearer ${token()}`;
+  const response=await fetch(`${apiBase()}${path}`,{...options,headers});
+  const text=await response.text();let data=null;try{data=text?JSON.parse(text):null;}catch{data={error:text||`Ogiltigt svar (${response.status})`};}
+  if(!response.ok)throw new Error(data?.error||data?.message||`HTTP ${response.status}`);
+  return data;
+}
+function show(message,type="info"){els.notice.textContent=message;els.notice.className=`notice show ${type}`;clearTimeout(show.timer);show.timer=setTimeout(()=>els.notice.className="notice",6500);}
+function esc(value){return String(value??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));}
+function fmtDate(value){if(!value)return "–";const date=new Date(value);return Number.isNaN(date.getTime())?"–":new Intl.DateTimeFormat("sv-SE",{dateStyle:"short",timeStyle:"short"}).format(date);}
+function uid(prefix){return `${prefix}-${Date.now()}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;}
+
+async function load(){
+  setBusy(true);
+  try{
+    const [settings,agents,tickets]=await Promise.all([api("/api/settings"),api("/api/agents").catch(()=>[]),api("/api/tickets").catch(()=>[])]);
+    state.settings=settings&&typeof settings==="object"?settings:{};
+    state.rules=(Array.isArray(state.settings.automationRules)?state.settings.automationRules:[]).map(normalizeRule).sort((a,b)=>a.order-b.order);
+    state.agents=Array.isArray(agents)?agents:agents?.items||[];state.tickets=Array.isArray(tickets)?tickets:tickets?.items||[];
+    render();fillTestTickets();
+  }catch(error){show(`Kunde inte läsa inställningarna: ${error.message}`,"error");els.rules.innerHTML='<div class="empty"><strong>Kunde inte läsa regler</strong>Kontrollera att du är inloggad som administratör och att Worker-adressen är rätt.</div>';}
+  finally{setBusy(false);}
+}
+function setBusy(value){state.busy=value;for(const b of [els.newBtn,els.runBtn])b.disabled=value;}
+function render(){
+  const query=els.searchInput.value.trim().toLocaleLowerCase("sv-SE"),status=els.stateFilter.value,trigger=els.triggerFilter.value;
+  const filtered=state.rules.filter(rule=>{
+    const hay=[rule.name,rule.description,labels.triggers[rule.trigger],...rule.actions.map(a=>`${labels.actions[a.type]} ${a.value} ${a.label}`)].join(" ").toLocaleLowerCase("sv-SE");
+    return (!query||hay.includes(query))&&(status==="all"||(status==="enabled")===rule.enabled)&&(trigger==="all"||trigger===rule.trigger);
+  });
+  els.totalStat.textContent=state.rules.length;els.activeStat.textContent=state.rules.filter(x=>x.enabled).length;els.inactiveStat.textContent=state.rules.filter(x=>!x.enabled).length;
+  const latest=state.rules.map(x=>x.updatedAt).filter(Boolean).sort().at(-1);els.updatedStat.textContent=fmtDate(latest);
+  if(!filtered.length){els.rules.innerHTML=`<div class="empty"><strong>${state.rules.length?"Inga regler matchar filtret":"Inga regler ännu"}</strong>${state.rules.length?"Ändra sökningen eller filtret.":"Skapa den första regeln och automatisera ett återkommande moment."}</div>`;return;}
+  els.rules.innerHTML=filtered.map((rule,index)=>`<article class="rule ${rule.enabled?"enabled":""}" data-id="${esc(rule.id)}"><div class="rule-accent"></div><div class="rule-body"><div class="rule-head"><div class="rule-title"><div class="order">${rule.order}</div><div style="min-width:0"><h2>${esc(rule.name)}</h2><div class="rule-desc">${esc(rule.description||"Ingen beskrivning")}</div></div></div><div class="rule-actions"><label class="switch"><input class="toggle-rule" type="checkbox" ${rule.enabled?"checked":""}> ${rule.enabled?"Aktiv":"Inaktiv"}</label><button class="btn small move-up" type="button" title="Flytta upp" ${index===0?"disabled":""}>↑</button><button class="btn small move-down" type="button" title="Flytta ned" ${index===filtered.length-1?"disabled":""}>↓</button><button class="btn small edit-rule" type="button">Redigera</button></div></div><div class="rule-meta"><span class="pill trigger">${esc(labels.triggers[rule.trigger]||rule.trigger)}</span><span class="pill">${rule.match==="all"?"Alla villkor":"Minst ett villkor"}: ${rule.conditions.length}</span>${rule.actions.map(a=>`<span class="pill action">${esc(labels.actions[a.type]||a.type)}${a.value?`: ${esc(a.label||a.value)}`:""}</span>`).join("")}${rule.stopProcessing?'<span class="pill off">Stoppar fortsatt körning</span>':""}</div></div></article>`).join("");
+}
+
+function openRule(id=null){
+  const existing=id?state.rules.find(x=>x.id===id):null;const rule=existing?normalizeRule(existing):normalizeRule({id:uid("rule"),name:"",actions:[{id:uid("action"),type:"set_priority",value:"Normal"}],order:state.rules.length+1});
+  state.editingId=existing?.id||null;els.dialogTitle.textContent=existing?"Redigera automatisk regel":"Ny automatisk regel";els.ruleName.value=rule.name;els.ruleDescription.value=rule.description;els.ruleTrigger.value=rule.trigger;els.ruleMatch.value=rule.match;els.ruleEnabled.value=String(rule.enabled);els.stopProcessing.checked=rule.stopProcessing;els.conditionList.innerHTML="";els.actionList.innerHTML="";rule.conditions.forEach(addConditionRow);rule.actions.forEach(addActionRow);els.deleteBtn.hidden=!existing;els.formErrors.className="errors";els.testResult.className="test-result";els.ruleDialog.showModal();setTimeout(()=>els.ruleName.focus(),40);
+}
+function closeRule(){els.ruleDialog.close();state.editingId=null;}
+function options(items,value){return items.map(item=>`<option value="${esc(item.value)}" ${item.value===value?"selected":""}>${esc(item.label)}</option>`).join("");}
+function addConditionRow(input={id:uid("condition"),field:"status",operator:"equals",value:""}){
+  const row=document.createElement("div");row.className="builder-row";row.dataset.id=input.id;row.innerHTML=`<span class="drag">⋮⋮</span><select class="condition-field" aria-label="Villkorsfält">${options(CONDITION_FIELDS,input.field)}</select><select class="condition-operator" aria-label="Operator">${options(OPERATORS,input.operator)}</select><input class="condition-value" value="${esc(input.value)}" placeholder="Värde" aria-label="Villkorsvärde"><button class="remove-row" type="button" aria-label="Ta bort villkor">×</button>`;row.querySelector(".remove-row").onclick=()=>row.remove();row.querySelector(".condition-operator").onchange=e=>{const optional=["empty","not_empty"].includes(e.target.value);const field=row.querySelector(".condition-value");field.disabled=optional;if(optional)field.value="";};els.conditionList.append(row);row.querySelector(".condition-operator").dispatchEvent(new Event("change"));
+}
+function actionValues(type,current="",label=""){
+  const select=(items)=>`<select class="action-value">${items.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(current)?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
+  if(type==="set_status")return select([["Open","Open"],["Pending","Pending"],["Resolved","Resolved"],["Closed","Closed"]]);
+  if(type==="set_priority")return select([["Low","Low"],["Normal","Normal"],["High","High"],["Urgent","Urgent"]]);
+  if(type==="set_service")return select((state.settings.services||[]).map(v=>[v,v]).concat(current&&!state.settings.services?.includes(current)?[[current,current]]:[]));
+  if(type==="set_category")return select((state.settings.categories||[]).map(v=>[v,v]).concat(current&&!state.settings.categories?.includes(current)?[[current,current]]:[]));
+  if(type==="assign_agent")return `<select class="action-value">${state.agents.map(a=>`<option value="${esc(a.id)}" data-label="${esc(a.name||a.email||a.id)}" ${String(a.id)===String(current)?"selected":""}>${esc(a.name||a.email||a.id)}</option>`).join("")}</select>`;
+  if(actionValueOptional(type))return '<input class="action-value" type="hidden" value="">';
+  return `<input class="action-value" value="${esc(current)}" placeholder="${type==="add_internal_note"?"Anteckning (du kan använda {{ticket.id}})":"Värde"}">`;
+}
+function addActionRow(input={id:uid("action"),type:"set_status",value:"Open",label:""}){
+  const row=document.createElement("div");row.className="builder-row action-row";row.dataset.id=input.id;row.innerHTML=`<span class="drag">⋮⋮</span><select class="action-type" aria-label="Åtgärdstyp">${options(ACTIONS,input.type)}</select><div class="action-value-wrap">${actionValues(input.type,input.value,input.label)}</div><button class="remove-row" type="button" aria-label="Ta bort åtgärd">×</button>`;row.querySelector(".remove-row").onclick=()=>row.remove();row.querySelector(".action-type").onchange=e=>{row.querySelector(".action-value-wrap").innerHTML=actionValues(e.target.value,"","");};els.actionList.append(row);
+}
+function collectRule(){
+  const previous=state.rules.find(x=>x.id===state.editingId);const conditions=[...els.conditionList.children].map(row=>({id:row.dataset.id,field:row.querySelector(".condition-field").value,operator:row.querySelector(".condition-operator").value,value:row.querySelector(".condition-value").value}));
+  const actions=[...els.actionList.children].map(row=>{const valueEl=row.querySelector(".action-value"),option=valueEl?.selectedOptions?.[0];return{id:row.dataset.id,type:row.querySelector(".action-type").value,value:valueEl?.value||"",label:option?.dataset?.label||option?.textContent||""};});
+  return normalizeRule({id:previous?.id||uid("rule"),name:els.ruleName.value,description:els.ruleDescription.value,trigger:els.ruleTrigger.value,match:els.ruleMatch.value,enabled:els.ruleEnabled.value==="true",stopProcessing:els.stopProcessing.checked,conditions,actions,order:previous?.order||state.rules.length+1,createdAt:previous?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+}
+async function persist(nextRules,message){
+  setBusy(true);try{const normalized=nextRules.map((r,i)=>({...normalizeRule(r,i),order:i+1}));const nextSettings={...state.settings,automationRules:normalized,automationUpdatedAt:new Date().toISOString()};const saved=await api("/api/settings",{method:"PUT",body:JSON.stringify(nextSettings)});state.settings=saved&&typeof saved==="object"?saved:nextSettings;state.rules=normalized;render();show(message,"success");return true;}catch(error){show(`Kunde inte spara reglerna: ${error.message}`,"error");return false;}finally{setBusy(false);}}
+async function submitRule(event){event.preventDefault();const validation=validateRule(collectRule());if(!validation.valid){els.formErrors.innerHTML=validation.errors.map(x=>`• ${esc(x)}`).join("<br>");els.formErrors.className="errors show";return;}let next=[...state.rules];const index=next.findIndex(x=>x.id===state.editingId);if(index>=0)next[index]=validation.rule;else next.push(validation.rule);if(await persist(next,`Regeln ”${validation.rule.name}” har sparats.`))closeRule();}
+async function deleteRule(){const rule=state.rules.find(x=>x.id===state.editingId);if(!rule||!confirm(`Ta bort regeln ”${rule.name}”?`))return;if(await persist(state.rules.filter(x=>x.id!==rule.id),"Regeln har tagits bort."))closeRule();}
+async function toggleRule(id,enabled){const next=state.rules.map(rule=>rule.id===id?{...rule,enabled,updatedAt:new Date().toISOString()}:rule);await persist(next,enabled?"Regeln är aktiverad.":"Regeln är inaktiverad.");}
+async function moveRule(id,delta){const next=[...state.rules].sort((a,b)=>a.order-b.order),i=next.findIndex(x=>x.id===id),j=i+delta;if(i<0||j<0||j>=next.length)return;[next[i],next[j]]=[next[j],next[i]];await persist(next,"Regelordningen har uppdaterats.");}
+function fillTestTickets(){els.testTicket.innerHTML='<option value="">Välj ärende…</option>'+state.tickets.slice().sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,100).map(t=>`<option value="${esc(t.id)}">#${esc(t.id)} · ${esc(t.subject||"Utan ämne")}</option>`).join("");}
+function testRule(){const ticket=state.tickets.find(x=>String(x.id)===els.testTicket.value);if(!ticket){els.testResult.textContent="Välj först ett ärende.";els.testResult.className="test-result show";return;}const rule=collectRule();const result=simulateRules([rule],ticket,{event:rule.trigger,actor:{role:"admin"},forceRule:true});if(!result.matchedCount){els.testResult.innerHTML="<strong>Regeln matchar inte.</strong><div class='muted'>Minst ett villkor gav inte önskat resultat.</div>";}else{els.testResult.innerHTML=`<strong>Regeln matchar.</strong>${result.matches.map(m=>`<div class="test-match">${m.changes.length?m.changes.map(c=>`${esc(c.field)}: ${esc(c.from||"(tomt)")} → ${esc(c.label||c.to||"(tomt)")}`).join("<br>"):"Ingen ändring"}</div>`).join("")}`;}els.testResult.className="test-result show";}
+async function runNow(){if(!state.rules.some(x=>x.enabled)){show("Det finns inga aktiva regler att köra.","info");return;}if(!confirm("Kör aktiva manuella och tidsstyrda regler mot alla öppna ärenden nu? Ändringar loggas i historiken."))return;els.runBtn.disabled=true;els.runBtn.textContent="Kör…";try{const result=await api("/api/automations/run",{method:"POST",body:JSON.stringify({mode:"manual"})});show(`Körningen är klar: ${result?.ticketsChanged||0} ärenden ändrades av ${result?.rulesExecuted||0} regelträffar.`,"success");}catch(error){show(`Körningen kunde inte startas: ${error.message}. Installera Worker-tillägget om routen saknas.`,"error");}finally{els.runBtn.disabled=false;els.runBtn.textContent="▶ Kör regler nu";}}
+
+TRIGGERS.forEach(item=>{els.ruleTrigger.insertAdjacentHTML("beforeend",`<option value="${item.value}">${esc(item.label)}</option>`);els.triggerFilter.insertAdjacentHTML("beforeend",`<option value="${item.value}">${esc(item.label)}</option>`);});
+els.newBtn.onclick=()=>openRule();els.closeDialog.onclick=closeRule;els.cancelBtn.onclick=closeRule;els.addCondition.onclick=()=>addConditionRow();els.addAction.onclick=()=>addActionRow();els.ruleForm.addEventListener("submit",submitRule);els.deleteBtn.onclick=deleteRule;els.testBtn.onclick=testRule;els.runBtn.onclick=runNow;els.searchInput.oninput=render;els.stateFilter.onchange=render;els.triggerFilter.onchange=render;
+els.rules.addEventListener("click",event=>{const card=event.target.closest(".rule");if(!card)return;const id=card.dataset.id;if(event.target.closest(".edit-rule"))openRule(id);if(event.target.closest(".move-up"))moveRule(id,-1);if(event.target.closest(".move-down"))moveRule(id,1);});
+els.rules.addEventListener("change",event=>{if(event.target.classList.contains("toggle-rule")){const card=event.target.closest(".rule");toggleRule(card.dataset.id,event.target.checked);}});
+els.logoutBtn.onclick=()=>{if(!confirm("Vill du logga ut?"))return;["eventful_token","authToken","sessionToken","token","eventful_session","session","user"].forEach(k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);});location.href="login.html";};
+els.ruleDialog.addEventListener("click",event=>{if(event.target===els.ruleDialog)closeRule();});
+load();
+</script>
+</body>
+</html>
