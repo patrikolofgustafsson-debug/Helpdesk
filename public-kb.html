@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>Supportbanken</title>
+  <link rel="stylesheet" href="css/kb-v3.css">
+</head>
+<body class="public-kb-page">
+  <header class="public-header">
+    <a class="public-brand" href="public-kb.html" id="publicBrand">SUPPORTBANKEN</a>
+    <span>Öppen kunskapsbas</span>
+  </header>
+  <main class="kb-shell public-shell">
+    <header class="kb-hero public-hero">
+      <div>
+        <p class="eyebrow">HJÄLP &amp; GUIDER</p>
+        <h1 id="publicTitle">SUPPORTBANKEN</h1>
+        <p class="lead">Sök bland publika instruktioner och lösningar – ingen inloggning krävs.</p>
+      </div>
+    </header>
+    <section class="toolbar public-toolbar" aria-label="Sök publika artiklar">
+      <label class="search-field">
+        <span class="sr-only">Sök</span>
+        <input id="publicSearch" type="search" placeholder="Vad behöver du hjälp med?" autocomplete="off">
+      </label>
+      <label>
+        <span class="sr-only">Kategori</span>
+        <select id="publicCategory"><option value="">Alla kategorier</option></select>
+      </label>
+    </section>
+    <div class="status-line" id="publicStatus" role="status" aria-live="polite">Läser in artiklar…</div>
+    <section class="article-grid" id="publicGrid" aria-label="Publika artiklar"></section>
+    <section class="empty-state hidden" id="publicEmpty"><strong>Inga artiklar hittades.</strong><span>Prova ett annat sökord.</span></section>
+  </main>
+  <dialog class="reader-dialog" id="publicReader">
+    <article class="reader-frame">
+      <button class="icon-button reader-close" id="publicReaderClose" type="button" aria-label="Stäng">×</button>
+      <p class="eyebrow" id="publicReaderCategory"></p>
+      <h2 id="publicReaderTitle"></h2>
+      <div class="article-content" id="publicReaderContent"></div>
+    </article>
+  </dialog>
+  <script type="module" src="js/public-kb.js"></script>
+</body>
+</html>
