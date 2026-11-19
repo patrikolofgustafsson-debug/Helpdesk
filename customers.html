@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Kunder · Eventful Desk</title>
+  <title>Kunder</title>
   <link rel="stylesheet" href="./css/app.css">
   <style>
     :root{--navy:#0d1830;--navy-2:#142343;--blue:#2f69eb;--blue-2:#2459cb;--ink:#10182c;--muted:#647087;--line:#dbe3ef;--surface:#fff;--page:#f5f7fb;--success:#087a55;--success-bg:#e8f7f1;--warn:#9a5a00;--warn-bg:#fff4da;--danger:#b3261e;--danger-bg:#fdecea;--shadow:0 18px 50px rgba(16,24,44,.10)}
@@ -13,12 +13,14 @@
     .notice{display:none;border-radius:12px;padding:12px 14px;margin:0 0 16px;font-weight:650}.notice.show{display:block}.notice.error{background:var(--danger-bg);color:var(--danger)}.notice.success{background:var(--success-bg);color:var(--success)}.notice.info{background:#edf3ff;color:#2459cb}.dropzone{display:block;border:2px dashed #aebbd0;border-radius:18px;padding:30px;text-align:center;background:#f9fbff;cursor:pointer;transition:.15s}.dropzone:hover,.dropzone.drag{border-color:var(--blue);background:#eef4ff}.dropzone strong{display:block;font-size:18px;margin-bottom:5px}.dropzone input{position:absolute;inline-size:1px;block-size:1px;opacity:0}.import-tools{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin:18px 0}.stepper{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}.step{border-radius:12px;background:#eef1f6;color:#68758a;padding:10px 12px;font-weight:800;font-size:12px}.step.active{background:#e8f0ff;color:#2459cb}.step.done{background:var(--success-bg);color:var(--success)}.mapping{display:grid;gap:10px}.map-row{display:grid;grid-template-columns:minmax(130px,.8fr) 30px minmax(210px,1.2fr);align-items:center;gap:12px;border-bottom:1px solid #eef1f6;padding:8px 0}.source-col{font-weight:800;overflow-wrap:anywhere}.arrow{color:#8b96a8;text-align:center}.preview-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;max-height:400px}.preview-table{border-collapse:collapse;width:100%;min-width:850px;font-size:12px}.preview-table th,.preview-table td{text-align:left;padding:10px 11px;border-bottom:1px solid #e8edf5;vertical-align:top}.preview-table th{position:sticky;top:0;background:#f3f6fb;z-index:2;font-size:11px;text-transform:uppercase;letter-spacing:.04em}.status{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;white-space:nowrap}.status.ok{background:var(--success-bg);color:var(--success)}.status.warn{background:var(--warn-bg);color:var(--warn)}.status.bad{background:var(--danger-bg);color:var(--danger)}.stats{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.stat{border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:#fff}.stat strong{font-size:18px;margin-right:4px}.progress-track{height:10px;border-radius:999px;background:#e8edf5;overflow:hidden}.progress-bar{height:100%;width:0;background:var(--blue);transition:width .2s}.progress-text{margin-top:8px;color:var(--muted)}.result-list{max-height:240px;overflow:auto;margin:14px 0 0;padding:0;list-style:none}.result-list li{padding:8px 0;border-bottom:1px solid #eef1f6}.muted{color:var(--muted)}.hidden{display:none!important}
     @media(max-width:800px){.shell{grid-template-columns:1fr}.sidebar{position:static;height:auto;padding:18px}.brand{margin-bottom:14px}.nav{grid-template-columns:repeat(3,1fr)}.nav a{text-align:center;padding:9px 6px}.logout-btn{margin-top:12px}.main{padding:28px 18px 50px}.page-head{align-items:flex-start}.page-head h1{font-size:38px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.map-row{grid-template-columns:1fr}.arrow{display:none}.dialog-head,.dialog-body,.dialog-foot{padding-inline:18px}.dialog-foot{flex-wrap:wrap}.dialog-foot .button{flex:1}.customer-grid{grid-template-columns:1fr}}@media(max-width:520px){.page-head{display:grid}.head-actions{width:100%}.head-actions .button{flex:1}.nav{grid-template-columns:repeat(2,1fr)}}
   </style>
+
+<script type="module" src="./js/system-name.js"></script>
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar" aria-label="Huvudmeny">
       <p class="eyebrow">SUPPORT MANAGEMENT</p>
-      <div class="brand">EVENTFUL<br>DESK<br>V2</div>
+      <div class="brand" data-system-name data-system-name-stacked></div>
       <nav class="nav">
         <a href="index.html">Dashboard</a><a href="tickets.html">Ärenden</a><a class="active" href="customers.html" aria-current="page">Kunder</a><a href="agents.html">Agenter</a><a href="kb.html">Kunskapsbas</a><a href="reports.html">Rapporter</a><a href="categories.html">Klassificering</a><a href="settings.html">Inställningar</a>
       </nav>

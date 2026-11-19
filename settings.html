@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inställningar - Eventful Desk</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><style>
+<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inställningar</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><style>
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.settings-card{background:#fff;border-radius:30px;padding:28px;box-shadow:0 2px 14px #0f172a0d}.settings-card h2{margin:0 0 6px}.settings-card p{color:#64748b;font-size:13px;margin:0 0 20px}.field{display:grid;gap:7px;margin-bottom:16px}.field label{font-size:12px;text-transform:uppercase;font-weight:900;color:#475569}.check{display:flex;align-items:center;gap:10px;margin:12px 0}.actions{margin-top:24px;display:flex;gap:12px}.wide{grid-column:1/-1}@media(max-width:900px){.settings-grid{grid-template-columns:1fr}.wide{grid-column:auto}}
-</style></head>
+</style>
+<script type="module" src="./js/system-name.js"></script>
+</head>
 <body><main class="page"><p class="eyebrow">Administration</p><h1 class="title">Inställningar</h1><div id="message" class="status"></div>
 <div class="settings-grid">
 <section class="settings-card"><h2>Grundinställningar</h2><p>Systemnamnet används i sidomeny, webbläsartitel, inloggning och kundportal.</p><div class="field"><label>Systemnamn</label><input id="systemName" class="input" placeholder="Eventful Desk"></div><div class="field"><label>Standardspråk</label><select id="language" class="input"><option value="sv-SE">Svenska</option><option value="en-US">English</option></select></div></section>
@@ -21,5 +23,5 @@ function message(t,e=false){const x=document.getElementById('message');x.textCon
 function render(){fillCategories();for(const id of ids){if(id==='defaultCategory')continue;const el=document.getElementById(id);if(!el)continue;if(el.type==='checkbox')el.checked=Boolean(current[id]);else el.value=current[id]??''}}
 function collect(){const out={...current};delete out.defaultService;for(const id of ids){const el=document.getElementById(id);if(!el)continue;if(el.type==='checkbox')out[id]=el.checked;else if(el.type==='number')out[id]=Number(el.value||0);else out[id]=el.value}return out}
 async function load(){try{const s=await get('/api/settings');current={...defaults,...s,services:Array.isArray(s.services)?s.services:[],categories:Array.isArray(s.categories)?s.categories:[]};delete current.defaultService;render();message('')}catch(e){message(e.message,true)}}
-saveBtn.onclick=async()=>{try{saveBtn.disabled=true;current=await put('/api/settings',collect());message('Inställningarna har sparats. Systemnamnet uppdateras i gränssnittet vid nästa sidladdning.')}catch(e){message(e.message,true)}finally{saveBtn.disabled=false}};reloadBtn.onclick=load;await load();
+saveBtn.onclick=async()=>{try{saveBtn.disabled=true;const payload=collect();current=await put('/api/settings',payload);window.EventfulDeskSystemName?.setName(payload.systemName);message('Inställningarna har sparats. Systemnamnet är uppdaterat i hela gränssnittet.')}catch(e){message(e.message,true)}finally{saveBtn.disabled=false}};reloadBtn.onclick=load;await load();
 </script></body></html>

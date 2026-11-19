@@ -3,23 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agenter - Eventful Desk</title>
+<title>Agenter</title>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="sidebar.css">
+
+<script type="module" src="./js/system-name.js"></script>
 </head>
 <body>
-<div class="app-shell"><aside id="app-sidebar" class="kb-sidebar" aria-label="Huvudmeny"></aside><main class="page">
+<main class="page">
   <div class="toolbar">
     <h1 class="title" style="flex:1">Agenter</h1>
     <button id="newBtn" class="btn btn-primary">Ny agent</button>
   </div>
   <div id="message" class="status"></div>
   <div id="cards" class="grid grid-2"></div>
-</main></div>
+</main>
 
 <div id="modal" class="modal">
   <div class="modal-box stack">
@@ -39,13 +40,13 @@
 </div>
 
 <script type="module">
-
+import { mount } from './js/layout.js';
 import { requireRole } from './js/auth.js';
 import { get, post, put, del } from './js/api.js';
 import { esc } from './js/util.js';
 
 await requireRole(['admin']);
-
+mount('agents.html');
 
 const cardsEl = document.getElementById('cards');
 const messageEl = document.getElementById('message');
@@ -216,6 +217,5 @@ modalEl.addEventListener('click', event => {
 
 await loadAgents();
 </script>
-  <script src="sidebar.js"></script>
 </body>
 </html>
