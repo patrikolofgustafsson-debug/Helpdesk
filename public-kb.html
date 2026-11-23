@@ -6,8 +6,20 @@
   <meta name="robots" content="index,follow">
   <title>Supportbanken</title>
   <link rel="stylesheet" href="css/kb-v3.css">
+  <style>
+    .helpdesk-banner{background:#101a32;color:#fff;min-height:96px;display:flex;align-items:center;justify-content:center;padding:20px 28px;position:relative;box-shadow:0 2px 12px #0f172a16}
+    .helpdesk-banner-name{font-size:30px;font-weight:950;font-style:italic;text-transform:uppercase;letter-spacing:.04em;text-align:center}
+    .login-link{position:absolute;right:30px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:9px;text-decoration:none;background:#2f6df6;color:#fff;padding:13px 19px;border-radius:16px;font-weight:900;box-shadow:0 8px 22px #2f6df633;transition:.16s}
+    .login-link:hover{transform:translateY(calc(-50% - 2px));background:#245eda;box-shadow:0 11px 26px #2f6df644}
+    .public-header{margin-top:0}
+    @media(max-width:760px){.helpdesk-banner{min-height:124px;align-items:flex-start}.helpdesk-banner-name{font-size:23px}.login-link{top:auto;right:50%;bottom:14px;transform:translateX(50%)}.login-link:hover{transform:translateX(50%) translateY(-2px)}}
+  </style>
 </head>
 <body class="public-kb-page">
+  <header class="helpdesk-banner">
+    <div class="helpdesk-banner-name" id="helpdeskBannerName">EVENTFUL DESK</div>
+    <a class="login-link" href="login.html" aria-label="Gå till inloggning">&#128274; Logga in</a>
+  </header>
   <header class="public-header">
     <a class="public-brand" href="public-kb.html" id="publicBrand">SUPPORTBANKEN</a>
     <span>Öppen kunskapsbas</span>
@@ -43,5 +55,21 @@
     </article>
   </dialog>
   <script type="module" src="js/public-kb.js"></script>
+  <script type="module">
+    import { API_BASE } from './js/config.js';
+    try {
+      const response = await fetch(API_BASE + '/api/public/settings', { headers: { Accept: 'application/json' } });
+      if (response.ok) {
+        const settings = await response.json();
+        const systemName = String(settings.systemName || settings.helpdeskName || settings.portalTitle || '').trim();
+        if (systemName) {
+          document.getElementById('helpdeskBannerName').textContent = systemName;
+          document.title = `Supportbanken - ${systemName}`;
+        }
+      }
+    } catch (error) {
+      console.warn('Kunde inte läsa publikt Helpdesknamn', error);
+    }
+  </script>
 </body>
 </html>
