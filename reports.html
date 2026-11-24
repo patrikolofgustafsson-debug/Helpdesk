@@ -1,3 +1,80 @@
-<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapporter</title><link rel="stylesheet" href="css/app.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rapporter</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 <script type="module" src="./js/system-name.js"></script>
-</head><body><main class="page"><h1 class="title">Rapporter</h1><div class="card"><p>Exportera aktuell ärendelista till CSV.</p><button id="exportBtn" class="btn btn-primary">Exportera CSV</button></div></main><script type="module">import{mount}from'./js/layout.js';import{requireRole}from'./js/auth.js';import{get}from'./js/api.js';await requireRole(['admin','agent']);mount('reports.html');exportBtn.onclick=async()=>{const a=await get('/api/tickets');const cols=['id','subject','customerName','status','priority','service','assignedAgentName','createdAt','updatedAt'];const csv='\ufeff'+[cols,...a.map(x=>cols.map(c=>x[c]??''))].map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';')).join('\r\n');const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),x=document.createElement('a');x.href=u;x.download='eventful-desk-tickets.csv';x.click();URL.revokeObjectURL(u)};</script></body></html>
+<style>
+.export-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.field{display:grid;gap:7px}.field label{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#53627a}.filter-card{margin-bottom:22px}.span-2{grid-column:span 2}.export-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px}.export-summary{margin-left:auto;color:#53627a;font-weight:800}.checkrow{display:flex;align-items:center;gap:9px;padding-top:28px}.preview{margin-top:22px;overflow:auto}.preview table{width:100%;border-collapse:collapse;font-size:13px}.preview th,.preview td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}.preview th{font-size:10px;text-transform:uppercase;color:#64748b}.status-line{min-height:24px;margin:10px 0;font-weight:800}.error{color:#b91c1c}@media(max-width:1100px){.export-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.export-grid{grid-template-columns:1fr}.span-2{grid-column:auto}.export-summary{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Analys & export</p>
+  <h1 class="title">Rapporter</h1>
+  <div id="status" class="status-line"></div>
+
+  <section class="card filter-card">
+    <h2>Urval för CSV-export</h2>
+    <div class="export-grid">
+      <div class="field"><label for="period">Period</label><select id="period" class="input"><option value="all">Alla datum</option><option value="today">Idag</option><option value="7">Senaste 7 dagarna</option><option value="30" selected>Senaste 30 dagarna</option><option value="90">Senaste 90 dagarna</option><option value="thisMonth">Denna månad</option><option value="lastMonth">Förra månaden</option><option value="thisYear">Detta år</option><option value="custom">Eget datumintervall</option></select></div>
+      <div class="field"><label for="fromDate">Från datum</label><input id="fromDate" class="input" type="date" disabled></div>
+      <div class="field"><label for="toDate">Till datum</label><input id="toDate" class="input" type="date" disabled></div>
+      <div class="field"><label for="dateField">Datum baserat på</label><select id="dateField" class="input"><option value="createdAt">Skapad</option><option value="updatedAt">Senast uppdaterad</option><option value="resolvedAt">Löst datum</option></select></div>
+
+      <div class="field"><label for="customer">Kund</label><select id="customer" class="input"><option value="">Alla kunder</option></select></div>
+      <div class="field"><label for="agent">Agent</label><select id="agent" class="input"><option value="">Alla agenter</option><option value="__unassigned">Ej tilldelade</option></select></div>
+      <div class="field"><label for="statusFilter">Status</label><select id="statusFilter" class="input"><option value="">Alla statusar</option></select></div>
+      <div class="field"><label for="priority">Prioritet</label><select id="priority" class="input"><option value="">Alla prioriteter</option></select></div>
+
+      <div class="field"><label for="service">Tjänst</label><select id="service" class="input"><option value="">Alla tjänster</option></select></div>
+      <div class="field"><label for="category">Kategori</label><select id="category" class="input"><option value="">Alla kategorier</option></select></div>
+      <div class="field"><label for="source">Källa</label><select id="source" class="input"><option value="">Alla källor</option></select></div>
+      <div class="field"><label for="assignment">Tilldelning</label><select id="assignment" class="input"><option value="">Alla</option><option value="assigned">Tilldelade</option><option value="unassigned">Ej tilldelade</option></select></div>
+
+      <div class="field span-2"><label for="search">Söktext</label><input id="search" class="input" type="search" placeholder="Ärendenummer, ämne, kund, agent, tjänst, kategori…"></div>
+      <label class="checkrow"><input id="withSurvey" type="checkbox"> Endast med kundundersökning</label>
+      <label class="checkrow"><input id="resolvedOnly" type="checkbox"> Endast lösta/stängda</label>
+    </div>
+    <div class="export-actions">
+      <button id="resetBtn" class="btn btn-light" type="button">Rensa urval</button>
+      <button id="exportFilteredBtn" class="btn btn-primary" type="button">Exportera aktuellt urval</button>
+      <button id="exportAllBtn" class="btn btn-light" type="button">Exportera alla ärenden</button>
+      <span id="summary" class="export-summary">Hämtar data…</span>
+    </div>
+  </section>
+
+  <section class="card preview">
+    <h2>Förhandsgranskning</h2>
+    <div id="preview"></div>
+  </section>
+</main>
+<script type="module">
+import{mount}from'./js/layout.js';import{requireRole}from'./js/auth.js';import{get}from'./js/api.js';
+await requireRole(['admin','agent']);mount('reports.html');
+const $=id=>document.getElementById(id),els={period:$('period'),from:$('fromDate'),to:$('toDate'),dateField:$('dateField'),customer:$('customer'),agent:$('agent'),status:$('statusFilter'),priority:$('priority'),service:$('service'),category:$('category'),source:$('source'),assignment:$('assignment'),search:$('search'),survey:$('withSurvey'),resolved:$('resolvedOnly'),summary:$('summary'),preview:$('preview'),statusLine:$('status')};
+let tickets=[],surveys=[];
+const arr=(v,k)=>Array.isArray(v)?v:(v&&Array.isArray(v[k])?v[k]:[]);const text=v=>String(v??'').trim();const norm=v=>text(v).toLocaleLowerCase('sv-SE');const esc=v=>text(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const dt=v=>{const d=v?new Date(v):null;return d&&!Number.isNaN(d.valueOf())?d:null};
+const created=t=>t.createdAt||t.created_at||t.created;const updated=t=>t.updatedAt||t.updated_at||t.modifiedAt||created(t);const resolved=t=>t.resolvedAt||t.closedAt||t.solvedAt||((/resolved|closed|löst|stängd/i).test(text(t.status))?updated(t):'');
+const agentName=t=>t.assignedAgentName||t.agentName||t.agent||'';const customerName=t=>t.customerName||t.customer||'';
+function unique(field,fn=x=>x[field]){return [...new Set(tickets.map(fn).map(text).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'sv'));}
+function fill(select,values,first){const current=select.value;select.innerHTML=`<option value="">${first}</option>`+values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(values.includes(current))select.value=current;}
+function populate(){fill(els.customer,unique('',customerName),'Alla kunder');const agents=unique('',agentName);els.agent.innerHTML='<option value="">Alla agenter</option><option value="__unassigned">Ej tilldelade</option>'+agents.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');fill(els.status,unique('status'),'Alla statusar');fill(els.priority,unique('priority'),'Alla prioriteter');fill(els.service,unique('service'),'Alla tjänster');fill(els.category,unique('category'),'Alla kategorier');fill(els.source,unique('',t=>t.source||t.channel||t.origin),'Alla källor');}
+function dateRange(){const now=new Date(),end=new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59,999);let start=null;if(els.period.value==='today')start=new Date(now.getFullYear(),now.getMonth(),now.getDate());else if(/^\d+$/.test(els.period.value)){start=new Date(end);start.setDate(start.getDate()-Number(els.period.value)+1);start.setHours(0,0,0,0)}else if(els.period.value==='thisMonth')start=new Date(now.getFullYear(),now.getMonth(),1);else if(els.period.value==='lastMonth'){start=new Date(now.getFullYear(),now.getMonth()-1,1);return[start,new Date(now.getFullYear(),now.getMonth(),0,23,59,59,999)]}else if(els.period.value==='thisYear')start=new Date(now.getFullYear(),0,1);else if(els.period.value==='custom'){return[els.from.value?new Date(els.from.value+'T00:00:00'):null,els.to.value?new Date(els.to.value+'T23:59:59.999'):null]}return[start,els.period.value==='all'?null:end];}
+function ticketDate(t){return els.dateField.value==='updatedAt'?updated(t):els.dateField.value==='resolvedAt'?resolved(t):created(t)}
+function hasSurvey(t){return surveys.some(s=>String(s.ticketId||s.ticket_id)===String(t.id))}
+function filtered(){const [start,end]=dateRange(),q=norm(els.search.value);return tickets.filter(t=>{const d=dt(ticketDate(t));if(start&&(!d||d<start))return false;if(end&&(!d||d>end))return false;if(els.customer.value&&customerName(t)!==els.customer.value)return false;if(els.agent.value==='__unassigned'&&agentName(t))return false;if(els.agent.value&&!['__unassigned'].includes(els.agent.value)&&agentName(t)!==els.agent.value)return false;if(els.status.value&&text(t.status)!==els.status.value)return false;if(els.priority.value&&text(t.priority)!==els.priority.value)return false;if(els.service.value&&text(t.service)!==els.service.value)return false;if(els.category.value&&text(t.category)!==els.category.value)return false;if(els.source.value&&text(t.source||t.channel||t.origin)!==els.source.value)return false;if(els.assignment.value==='assigned'&&!agentName(t))return false;if(els.assignment.value==='unassigned'&&agentName(t))return false;if(els.resolved.checked&&!resolved(t))return false;if(els.survey.checked&&!hasSurvey(t))return false;if(q&&!norm([t.id,t.subject,t.title,customerName(t),agentName(t),t.service,t.category,t.status,t.priority].join(' ')).includes(q))return false;return true})}
+function durationHours(a,b){const x=dt(a),y=dt(b);return x&&y?((y-x)/36e5).toFixed(2):''}
+function row(t){const msgs=arr(t.messages,'messages'),notes=arr(t.internalNotes||t.notes,'notes'),customerReplies=msgs.filter(m=>m.fromCustomer||m.role==='customer').length,agentReplies=msgs.length-customerReplies,s=surveys.find(x=>String(x.ticketId||x.ticket_id)===String(t.id));return{id:t.id,createdAt:created(t),updatedAt:updated(t),resolvedAt:resolved(t),customer:customerName(t),agent:agentName(t),subject:t.subject||t.title||'',status:t.status||'',priority:t.priority||'',service:t.service||'',category:t.category||'',source:t.source||t.channel||t.origin||'',firstResponseHours:t.firstResponseAt?durationHours(created(t),t.firstResponseAt):'',resolutionHours:resolved(t)?durationHours(created(t),resolved(t)):'',customerReplies,agentReplies,internalNotes:notes.length,csat:s?.rating||s?.csat||'',nps:s?.nps??''}}
+const columns=[['id','Ärendenummer'],['createdAt','Skapad'],['updatedAt','Senast uppdaterad'],['resolvedAt','Löst datum'],['customer','Kund'],['agent','Agent'],['subject','Ämne'],['status','Status'],['priority','Prioritet'],['service','Tjänst'],['category','Kategori'],['source','Källa'],['firstResponseHours','Första svarstid (h)'],['resolutionHours','Lösningstid (h)'],['customerReplies','Kundsvar'],['agentReplies','Agentsvar'],['internalNotes','Interna anteckningar'],['csat','CSAT'],['nps','NPS']];
+function render(){const data=filtered();els.summary.textContent=`${data.length} av ${tickets.length} ärenden i urvalet`;els.preview.innerHTML=data.length?`<table><thead><tr>${columns.slice(0,9).map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${data.slice(0,10).map(t=>{const r=row(t);return`<tr>${columns.slice(0,9).map(c=>`<td>${esc(r[c[0]])}</td>`).join('')}</tr>`}).join('')}</tbody></table>${data.length>10?`<p>Visar de första 10 av ${data.length}.</p>`:''}`:'<p>Inga ärenden matchar urvalet.</p>'}
+function exportCsv(data,name){const rows=data.map(row),header=columns.map(c=>c[1]);const lines=[header,...rows.map(r=>columns.map(c=>r[c[0]]??''))].map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';'));const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+function reset(){els.period.value='30';els.from.value='';els.to.value='';els.from.disabled=true;els.to.disabled=true;els.dateField.value='createdAt';[els.customer,els.agent,els.status,els.priority,els.service,els.category,els.source,els.assignment].forEach(e=>e.value='');els.search.value='';els.survey.checked=false;els.resolved.checked=false;render()}
+els.period.onchange=()=>{const custom=els.period.value==='custom';els.from.disabled=!custom;els.to.disabled=!custom;render()};[els.from,els.to,els.dateField,els.customer,els.agent,els.status,els.priority,els.service,els.category,els.source,els.assignment].forEach(e=>e.addEventListener('change',render));els.search.addEventListener('input',render);els.survey.onchange=els.resolved.onchange=render;resetBtn.onclick=reset;exportFilteredBtn.onclick=()=>exportCsv(filtered(),`eventful-desk-urval-${new Date().toISOString().slice(0,10)}.csv`);exportAllBtn.onclick=()=>exportCsv(tickets,`eventful-desk-alla-${new Date().toISOString().slice(0,10)}.csv`);
+try{const result=await get('/api/tickets');tickets=arr(result,'tickets');try{const surveyResult=await get('/api/surveys');surveys=arr(surveyResult,'surveys')}catch{}populate();render();els.statusLine.textContent=''}catch(error){els.statusLine.textContent='Kunde inte hämta rapportdata: '+(error.message||error);els.statusLine.classList.add('error')}
+</script>
+</body></html>
