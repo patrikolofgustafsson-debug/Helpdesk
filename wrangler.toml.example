@@ -1,0 +1,14 @@
+name = "eventful-desk"
+main = "worker.js"
+compatibility_date = "2026-11-25"
+
+[ai]
+binding = "AI"
+
+[vars]
+AI_TEXT_MODEL = "@cf/google/gemma-4-26b-a4b-it"
+AI_EMBEDDING_MODEL = "@cf/baai/bge-m3"
+
+# Lägg aldrig secrets i filen. Behåll dem som Cloudflare secrets:
+# GITHUB_TOKEN, ADMIN_KEY, AUTH_SECRET,
+# MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MAILBOX
